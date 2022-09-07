@@ -1,0 +1,4 @@
+BEGIN
+MOV B 5
+ADD B 10
+END
