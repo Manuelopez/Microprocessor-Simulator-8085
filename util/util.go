@@ -21,6 +21,9 @@ func DecimalToBinary(value int) [8]byte {
 	}
 
 	for i, c := range bs {
+    if(i == 8){
+      panic("VALUE ABOVE 8 BITS")
+    }
 		if c == '0' {
 			ba[i] = 0
 		} else {

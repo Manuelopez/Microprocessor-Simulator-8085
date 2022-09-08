@@ -6,6 +6,7 @@ import (
 	"micp-sim/alu"
 	"micp-sim/clock"
 	"micp-sim/memory"
+	"micp-sim/opcode"
 	"micp-sim/register"
 	"micp-sim/stack"
 	"micp-sim/util"
@@ -13,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 )
+
+var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
 
 type MicroProcessor struct {
 	Al, Ah, B, C, D, E, L, H *register.Register
@@ -89,72 +92,35 @@ func (m *MicroProcessor) Test() {
 		}
 	}
 
-  a:= m.Al.GetValue()
-  fmt.Println(util.BinaryToDecimal(a[:]))
+	a := m.Al.GetValue()
+	fmt.Println(util.BinaryToDecimal(a[:]))
 
 }
 
 func (m *MicroProcessor) Execute() bool {
 	hbitsInst := m.Ir[util.HIGH_BITS].GetValue()
 	lbitsInst := m.Ir[util.LOW_BITS].GetValue()
-	instB := []byte{}
-	for _, v := range hbitsInst {
-		if v == 0 {
-			continue
-		}
-		instB = append(instB, v)
-	}
-	for _, v := range lbitsInst {
-		if v == 0 {
-			continue
-		}
+	code := util.BinaryToDecimal(hbitsInst[:])
 
-		instB = append(instB, v)
-	}
-
-	instruction := string(instB)
-	splitInstruction := strings.Split(instruction, " ")
-	operation := splitInstruction[0]
-	var operand1 string
-	var operand2 string
-	if len(splitInstruction) == 3 {
-		operand1 = splitInstruction[1]
-		operand2 = splitInstruction[2]
-	}
-
-	switch operation {
-	case "END":
-		return true
-	case "BEGIN":
+	switch code {
+	case opcode.BEGIN:
 		fmt.Println("PROGRAM STARTED")
-	case "MOV":
-		switch operand1 {
-		case "B":
-			switch operand2 {
-			default:
-				value, err := strconv.Atoi(operand2)
-				check(err)
-				m.B.SetLoad()
-				m.B.LoadValue(util.DecimalToBinary(value))
-			}
-		}
-	case "ADD":
-		switch operand1 {
-		case "B":
-			switch operand2 {
-			default:
-				value, err := strconv.Atoi(operand2)
-				check(err)
-				m.Alu.Temp1.SetLoad()
-				m.Alu.Temp1.LoadValue(m.B.GetValue())
-				m.Alu.Temp2.SetLoad()
-				m.Alu.Temp2.LoadValue(util.DecimalToBinary(value))
-        m.Alu.Addition("")
-
-			}
-		}
-
+	case opcode.END:
+		fmt.Println("PROGRAM ENDED")
+		return true
+	case opcode.MOV_AL_VAL:
+		m.Al.SetLoad()
+		m.Al.LoadValue(lbitsInst)
+	case opcode.ADD_VAL:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+    m.Alu.Addition("")
+	default:
+		fmt.Println("OPERATION NOT IMPLEMENTED")
 	}
+
 	return false
 }
 
@@ -216,24 +182,10 @@ func (m *MicroProcessor) LoadInstructions(filePath string) {
 	for scanner.Scan() {
 		text := scanner.Text()
 		instructions := []byte(text)
-		hbitsValue := [8]byte{}
+		hbitsValue, lbitsValue, isMemoryOp := Assembler(string(instructions))
 
-		lastIndex := 0
-		for i, x := range instructions {
-
-			lastIndex = i
-			if i == 8 {
-				break
-			}
-			hbitsValue[i] = x
-
-		}
-
-		lbitsValue := [8]byte{}
-		if len(instructions) > 8 {
-			for i := lastIndex; i < len(instructions); i++ {
-				lbitsValue[i-8] = instructions[i]
-			}
+		if isMemoryOp {
+			//TODO MEMORY OPERATION
 		}
 
 		hbits := pc >> 8
@@ -253,8 +205,75 @@ func (m *MicroProcessor) LoadInstructions(filePath string) {
 
 }
 
+func Assembler(instructions string) ([8]byte, [8]byte, bool) {
+	instructions = strings.ToUpper(instructions)
+	splitInstructions := strings.Split(instructions, " ")
+	if len(splitInstructions) == 1 {
+		switch splitInstructions[0] {
+		case "BEGIN":
+			return util.DecimalToBinary(opcode.BEGIN), util.DecimalToBinary(opcode.BEGIN), false
+		case "END":
+			return util.DecimalToBinary(opcode.END), util.DecimalToBinary(opcode.NOTHING), false
+		}
+	} else if len(splitInstructions) == 2 {
+		fmt.Println("NOT IMPLEMENTED")
+	} else if len(splitInstructions) == 3 {
+		operation := splitInstructions[0]
+		operand1 := splitInstructions[1]
+		operand2 := splitInstructions[2]
+		switch operation {
+		case "ADD":
+			if operand1 != "AL" {
+
+				panic("ADDITION CAN ONLY BE DONE WITH AL AS OPERAND 1 " + operand1 + " NOT ALLOWED")
+			}
+			val, err := strconv.Atoi(operand2)
+			if err == nil {
+				check8BitOverflow(val)
+				code, _ := opcode.ADD["VAL"]
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(val), false
+			} else {
+				code, ok := opcode.ADD[operand2]
+				checkOperand(ok, operand2)
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+			}
+		case "MOV":
+			/* TODO MEMORY AS OPERAND1 */
+			mapedOp1, ok := opcode.MOV[operand1]
+			checkOperand(ok, operand1)
+			val, err := strconv.Atoi(operand2)
+			if err == nil {
+				check8BitOverflow(val)
+				code, _ := mapedOp1["VAL"]
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(val), false
+			} else {
+				code, ok := mapedOp1[operand2]
+				checkOperand(ok, operand2)
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+			}
+		default:
+			panic(operation + " NOT A VALID OPERATION")
+
+		}
+	}
+
+	panic("WORNG COMMAND")
+}
+
 func check(e error) {
 	if e != nil {
 		panic(e)
+	}
+}
+
+func check8BitOverflow(val int) {
+	if val > 255 {
+		panic(fmt.Sprintf("%v OVERFLOW"))
+	}
+}
+
+func checkOperand(ok bool, operand string) {
+	if !ok {
+		panic(operand + " NOT A VALID OPERAND")
 	}
 }

@@ -8,7 +8,7 @@ import (
 
 
 type Memory struct {
-	Mem [255][255][16]byte
+	Mem [256][256][16]byte
 	Mbr *[2]register.Register
 	Mar *[2]register.Register
 }
