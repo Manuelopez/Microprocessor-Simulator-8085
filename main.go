@@ -12,8 +12,8 @@ func main() {
 }
 
 func start() {
-  m := microprocessor.New(2)
-	m.Test()
+  m := microprocessor.New(5)
+	m.Start()
 }
 
 func testUtill(){

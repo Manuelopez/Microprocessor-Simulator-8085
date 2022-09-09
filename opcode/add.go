@@ -2,6 +2,7 @@ package opcode
 
 const (
 	ADD_VAL = 0x35
+	ADD_MEM = 0x36
 	ADD_AH  = 0x37
 	ADD_B   = 0x38
 	ADD_C   = 0x39
@@ -21,4 +22,5 @@ var ADD = map[string]byte{
 	"E":   ADD_E,
 	"L":   ADD_L,
 	"H":   ADD_H,
+	"M":   ADD_MEM,
 }

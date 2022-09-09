@@ -71,14 +71,21 @@ func New(freq float64) MicroProcessor {
 }
 
 func (m *MicroProcessor) Start() {
-	go m.Clock.TurnOn()
+  go m.Clock.TurnOn()
+  m.LoadInstructions("./instructions.txt")
 	for {
-		if _, ts := m.Clock.GetState(); ts == clock.State0To1 {
-			fmt.Println("a")
-		} else {
-			fmt.Println("b")
+		m.ReadInstructon()
+		endProgram := m.Execute()
+		if endProgram {
+      m.Clock.TurnOff()
+			break
 		}
 	}
+
+	a := m.Al.GetValue()
+	fmt.Println(util.BinaryToDecimal(a[:]))
+
+	
 }
 
 func (m *MicroProcessor) Test() {
@@ -105,18 +112,24 @@ func (m *MicroProcessor) Execute() bool {
 	switch code {
 	case opcode.BEGIN:
 		fmt.Println("PROGRAM STARTED")
+    m.Clock.Wait()
 	case opcode.END:
 		fmt.Println("PROGRAM ENDED")
+    m.Clock.Wait()
 		return true
 	case opcode.MOV_AL_VAL:
 		m.Al.SetLoad()
 		m.Al.LoadValue(lbitsInst)
+    m.Clock.Wait()
 	case opcode.ADD_VAL:
 		m.Alu.Temp1.SetLoad()
 		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+    m.Clock.Wait()
 		m.Alu.Temp2.SetLoad()
 		m.Alu.Temp2.LoadValue(lbitsInst)
-    m.Alu.Addition("")
+    m.Clock.Wait()
+		m.Alu.Addition("")
+    m.Clock.Wait()
 	default:
 		fmt.Println("OPERATION NOT IMPLEMENTED")
 	}
@@ -201,6 +214,8 @@ func (m *MicroProcessor) LoadInstructions(filePath string) {
 		m.Memory.Write()
 		pc++
 
+    // m.Clock.Wait()
+
 	}
 
 }
@@ -224,7 +239,6 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool) {
 		switch operation {
 		case "ADD":
 			if operand1 != "AL" {
-
 				panic("ADDITION CAN ONLY BE DONE WITH AL AS OPERAND 1 " + operand1 + " NOT ALLOWED")
 			}
 			val, err := strconv.Atoi(operand2)

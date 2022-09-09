@@ -5,10 +5,8 @@ import (
 	"micp-sim/util"
 )
 
-
-
 type Memory struct {
-	Mem [256][256][16]byte
+	Mem [256][256][16]register.Register
 	Mbr *[2]register.Register
 	Mar *[2]register.Register
 }
@@ -22,16 +20,25 @@ func (m *Memory) Write() {
 	lbitsAdressBinary := m.Mar[util.LOW_BITS].GetValue()
 	address1 := util.BinaryToDecimal(hbitsAdressBinary[:])
 	address2 := util.BinaryToDecimal(lbitsAdressBinary[:])
+
 	hbitsValue := m.Mbr[util.HIGH_BITS].GetValue()
 	lbitsValue := m.Mbr[util.LOW_BITS].GetValue()
 
-	for i := 0; i < 16; i++ {
-		if i < 8 {
-			m.Mem[address1][address2][i] = hbitsValue[i]
-		}else{
-      m.Mem[address1][address2][i] = lbitsValue[i-8]
-    }
-	}
+	/*
+			for i := 0; i < 16; i++ {
+				if i < 8 {
+					m.Mem[address1][address2][i] = hbitsValue[i]
+				}else{
+		      m.Mem[address1][address2][i] = lbitsValue[i-8]
+		    }
+			}
+	*/
+
+	m.Mem[address1][address2][util.HIGH_BITS].SetLoad()
+	m.Mem[address1][address2][util.HIGH_BITS].LoadValue(hbitsValue)
+
+	m.Mem[address1][address2][util.LOW_BITS].SetLoad()
+	m.Mem[address1][address2][util.LOW_BITS].LoadValue(lbitsValue)
 
 }
 
@@ -42,6 +49,7 @@ func (m *Memory) Read() {
 	address1 := util.BinaryToDecimal(hbits[:])
 	address2 := util.BinaryToDecimal(lbits[:])
 
+  /*
 	data := m.Mem[address1][address2]
 
 	mbrHbits := [8]byte{}
@@ -54,11 +62,13 @@ func (m *Memory) Read() {
 	for i := 0; i < 8; i++ {
 		mbrLbits[i] = data[i+8]
 	}
+	*/
+	hbitsValue := m.Mem[address1][address2][util.HIGH_BITS].GetValue()
+	lbitsValue := m.Mem[address1][address2][util.LOW_BITS].GetValue()
 
 	m.Mbr[util.HIGH_BITS].SetLoad()
-	m.Mbr[util.HIGH_BITS].LoadValue(mbrHbits)
+	m.Mbr[util.HIGH_BITS].LoadValue(hbitsValue)
 	m.Mbr[util.LOW_BITS].SetLoad()
-	m.Mbr[util.LOW_BITS].LoadValue(mbrLbits)
-
+	m.Mbr[util.LOW_BITS].LoadValue(lbitsValue)
 
 }
