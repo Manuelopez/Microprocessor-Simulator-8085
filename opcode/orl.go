@@ -8,6 +8,7 @@ const (
 	ORL_AL_E  = 0x21
 	ORL_AL_L  = 0x22
 	ORL_AL_H  = 0x23
+  
 )
 
 var ORL = map[string]byte{
@@ -18,4 +19,5 @@ var ORL = map[string]byte{
 	"E":  ORL_AL_E,
 	"L":  ORL_AL_L,
 	"H":  ORL_AL_H,
+
 }
