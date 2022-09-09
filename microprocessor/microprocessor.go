@@ -18,6 +18,7 @@ import (
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
 
 type MicroProcessor struct {
+  // AH HIGHT BITS AL LOW BITS
 	Al, Ah, B, C, D, E, L, H *register.Register
 	*memory.Memory
 	*stack.Stack
@@ -282,7 +283,7 @@ func check(e error) {
 
 func check8BitOverflow(val int) {
 	if val > 255 {
-		panic(fmt.Sprintf("%v OVERFLOW"))
+		panic(fmt.Sprintf("%v OVERFLOW", val))
 	}
 }
 
