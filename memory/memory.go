@@ -49,19 +49,19 @@ func (m *Memory) Read() {
 	address1 := util.BinaryToDecimal(hbits[:])
 	address2 := util.BinaryToDecimal(lbits[:])
 
-  /*
-	data := m.Mem[address1][address2]
+	/*
+		data := m.Mem[address1][address2]
 
-	mbrHbits := [8]byte{}
-	mbrLbits := [8]byte{}
+		mbrHbits := [8]byte{}
+		mbrLbits := [8]byte{}
 
-	for i := 0; i < len(mbrHbits); i++ {
-		mbrHbits[i] = data[i]
-	}
+		for i := 0; i < len(mbrHbits); i++ {
+			mbrHbits[i] = data[i]
+		}
 
-	for i := 0; i < 8; i++ {
-		mbrLbits[i] = data[i+8]
-	}
+		for i := 0; i < 8; i++ {
+			mbrLbits[i] = data[i+8]
+		}
 	*/
 	hbitsValue := m.Mem[address1][address2][util.HIGH_BITS].GetValue()
 	lbitsValue := m.Mem[address1][address2][util.LOW_BITS].GetValue()

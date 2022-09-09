@@ -18,7 +18,7 @@ import (
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
 
 type MicroProcessor struct {
-  // AH HIGHT BITS AL LOW BITS
+	// AH HIGHT BITS AL LOW BITS
 	Al, Ah, B, C, D, E, L, H *register.Register
 	*memory.Memory
 	*stack.Stack
@@ -72,13 +72,13 @@ func New(freq float64) MicroProcessor {
 }
 
 func (m *MicroProcessor) Start() {
-  go m.Clock.TurnOn()
-  m.LoadInstructions("./instructions.txt")
+	go m.Clock.TurnOn()
+	m.LoadInstructions("./instructions.txt")
 	for {
 		m.ReadInstructon()
 		endProgram := m.Execute()
 		if endProgram {
-      m.Clock.TurnOff()
+			m.Clock.TurnOff()
 			break
 		}
 	}
@@ -86,7 +86,6 @@ func (m *MicroProcessor) Start() {
 	a := m.Al.GetValue()
 	fmt.Println(util.BinaryToDecimal(a[:]))
 
-	
 }
 
 func (m *MicroProcessor) Test() {
@@ -113,24 +112,24 @@ func (m *MicroProcessor) Execute() bool {
 	switch code {
 	case opcode.BEGIN:
 		fmt.Println("PROGRAM STARTED")
-    m.Clock.Wait()
+		m.Clock.Wait()
 	case opcode.END:
 		fmt.Println("PROGRAM ENDED")
-    m.Clock.Wait()
+		m.Clock.Wait()
 		return true
 	case opcode.MOV_AL_VAL:
 		m.Al.SetLoad()
 		m.Al.LoadValue(lbitsInst)
-    m.Clock.Wait()
+		m.Clock.Wait()
 	case opcode.ADD_VAL:
 		m.Alu.Temp1.SetLoad()
 		m.Alu.Temp1.LoadValue(m.Al.GetValue())
-    m.Clock.Wait()
+		m.Clock.Wait()
 		m.Alu.Temp2.SetLoad()
 		m.Alu.Temp2.LoadValue(lbitsInst)
-    m.Clock.Wait()
+		m.Clock.Wait()
 		m.Alu.Addition("")
-    m.Clock.Wait()
+		m.Clock.Wait()
 	default:
 		fmt.Println("OPERATION NOT IMPLEMENTED")
 	}
@@ -215,7 +214,7 @@ func (m *MicroProcessor) LoadInstructions(filePath string) {
 		m.Memory.Write()
 		pc++
 
-    // m.Clock.Wait()
+		// m.Clock.Wait()
 
 	}
 
