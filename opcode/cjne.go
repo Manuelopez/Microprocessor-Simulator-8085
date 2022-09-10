@@ -1,0 +1,23 @@
+package opcode
+
+const (
+	CJNE_AL_VAL_ADDR = 0xC2
+	CJNE_AH_VAL_ADDR = 0xC3
+	CJNE_B_VAL_ADDR  = 0xC4
+	CJNE_C_VAL_ADDR  = 0xC5
+	CJNE_D_VAL_ADDR  = 0xC6
+	CJNE_E_VAL_ADDR  = 0xC7
+	CJNE_L_VAL_ADDR  = 0xC8
+	CJNE_H_VAL_ADDR  = 0xC9
+)
+
+var CJNE = map[string]byte{
+	"AL": CJNE_AL_VAL_ADDR,
+	"AH": CJNE_AH_VAL_ADDR,
+	"B":  CJNE_B_VAL_ADDR,
+	"C":  CJNE_C_VAL_ADDR,
+	"D":  CJNE_D_VAL_ADDR,
+	"E":  CJNE_E_VAL_ADDR,
+	"L":  CJNE_L_VAL_ADDR,
+	"H":  CJNE_H_VAL_ADDR,
+}
