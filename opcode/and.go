@@ -10,6 +10,7 @@ const (
 	AND_AL_H   = 0x2A
 	AND_AL_M   = 0x2C
 	AND_AL_VAL = 0x2E
+	AND_S      = 0xF5
 )
 
 var AND = map[string]byte{
@@ -22,4 +23,5 @@ var AND = map[string]byte{
 	"H":   AND_AL_H,
 	"M":   AND_AL_M,
 	"VAL": AND_AL_VAL,
+	"S":   AND_S,
 }

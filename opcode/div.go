@@ -10,6 +10,7 @@ const (
 	DIV_AL_E   = 0x56
 	DIV_AL_L   = 0x57
 	DIV_AL_H   = 0x58
+	DIV_S      = 0xF3
 )
 
 var DIV = map[string]byte{
@@ -22,4 +23,5 @@ var DIV = map[string]byte{
 	"E":   DIV_AL_E,
 	"L":   DIV_AL_L,
 	"H":   DIV_AL_H,
+	"S":   DIV_S,
 }

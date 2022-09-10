@@ -10,6 +10,7 @@ const (
 	SUB_AL_E   = 0x44
 	SUB_AL_L   = 0x45
 	SUB_AL_H   = 0x46
+	SUB_S      = 0xF1
 )
 
 var SUB = map[string]byte{
@@ -22,4 +23,5 @@ var SUB = map[string]byte{
 	"E":   SUB_AL_E,
 	"L":   SUB_AL_L,
 	"H":   SUB_AL_H,
+	"S":   SUB_S,
 }

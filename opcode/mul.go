@@ -10,6 +10,7 @@ const (
 	MUL_AL_E   = 0x4D
 	MUL_AL_L   = 0x4E
 	MUL_AL_H   = 0x4F
+	MUL_S      = 0xF2
 )
 
 var MUL = map[string]byte{
@@ -22,4 +23,5 @@ var MUL = map[string]byte{
 	"E":   MUL_AL_E,
 	"L":   MUL_AL_L,
 	"H":   MUL_AL_H,
+	"S":   MUL_S,
 }
