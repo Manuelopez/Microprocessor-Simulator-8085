@@ -10,6 +10,7 @@ const (
 	ADD_E   = 0x3B
 	ADD_L   = 0x3C
 	ADD_H   = 0x3D
+	ADD_S   = 0xEF
 )
 
 // MAP TO CONVERT ADD TO Number
@@ -23,4 +24,5 @@ var ADD = map[string]byte{
 	"L":   ADD_L,
 	"H":   ADD_H,
 	"M":   ADD_MEM,
+	"S":   ADD_S,
 }
