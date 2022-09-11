@@ -95,9 +95,15 @@ const (
 	MOV_M_C  = 0x0D
 	MOV_M_D  = 0x0E
 	MOV_M_E  = 0x0F
+
+	// ---------- AX
+	MOV_AX_M = 0x10
 )
 
 var MOV = map[string]map[string]byte{
+	"AX": map[string]byte{
+		"M": MOV_AX_M,
+	},
 	"AL": map[string]byte{
 		"AH":  MOV_AH_AL,
 		"B":   MOV_AL_B,

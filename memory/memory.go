@@ -6,7 +6,7 @@ import (
 )
 
 type Memory struct {
-	Mem [256][256][16]register.Register
+	Mem [256][256][2]register.Register
 	Mbr *[2]register.Register
 	Mar *[2]register.Register
 }

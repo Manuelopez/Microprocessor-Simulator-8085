@@ -35,7 +35,7 @@ func (a *Alu) Addition(s string){
     a.Carry = false
   }
   if(s == "s"){
-    a.Stack.Push(byte(res))
+    a.Stack.Push(util.DecimalToBinary(res))
   } else{
     a.Al.SetLoad()
     a.Al.LoadValue(util.DecimalToBinary(res))
