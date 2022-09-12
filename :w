@@ -19,14 +19,17 @@ func DecimalToBinary(value int) [8]byte {
 			bs = "0" + bs
 		}
 	}
-
-
-	for i, c := range bs {
-		if c == '0' {
-			ba[i] = 0
+  count := 7;
+  for i := len([]rune(bs)); i>=0; i-- {
+    if(count == -1){
+      break 
+    }
+		if bs[count] == '0' {
+			ba[count] = 0
 		} else {
-			ba[i] = 1
+			ba[count] = 1
 		}
+    count--
 	}
 
 	return ba
