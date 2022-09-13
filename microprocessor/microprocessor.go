@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
 
 type MicroProcessor struct {
