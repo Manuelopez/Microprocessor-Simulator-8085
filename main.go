@@ -8,7 +8,7 @@ import (
 
 func main() {
   start()
-  //testUtill()
+// testUtill()
 }
 
 func start() {
@@ -18,11 +18,14 @@ func start() {
 
 func testUtill(){
   //a := util.DecimalToBinary(5)
-  b := util.DecimalToBinary(500)
+  b, c := util.DecimalToBinary16(102)
   //fmt.Println(util.BinaryToDecimal(a[:]))
-  fmt.Println(util.BinaryToDecimal(b[:]))
+  d := []byte{}
+  d = append(d, b[:]...)
+  d= append(d, c[:]...)
+  fmt.Println(util.BinaryToDecimal(d[:]))
 
 
 }
 
-
+ 

@@ -14,7 +14,7 @@ type Alu struct {
 	Stack      *stack.Stack
 	Carry      bool
 	Zero       bool
-	Comparison bool
+	Comparison register.Register
 	Mar        *[2]register.Register
 	Mbr        *[2]register.Register
 }
@@ -162,6 +162,12 @@ func (a *Alu) Increment(value [8]byte) [8]byte {
 	t1 := util.BinaryToDecimal(value[:])
 	res := t1 + 1
 
+  if res == 0{
+    a.Zero = true
+  }else {
+    a.Zero = false
+  }
+
 	if res > 255 {
 		a.Carry = true
 	} else {
@@ -179,6 +185,11 @@ func (a *Alu) Decrement(value [8]byte) [8]byte {
 	t1 := util.BinaryToDecimal(value[:])
 	res := t1 - 1
 
+  if res == 0{
+    a.Zero = true
+  }else{
+    a.Zero = false
+  }
 	if res < 0 {
 		a.Carry = true
 	} else {
@@ -189,4 +200,31 @@ func (a *Alu) Decrement(value [8]byte) [8]byte {
 
 	binaryByteRes := util.DecimalToBinary(int(byteRes))
 	return binaryByteRes
+}
+
+func (a *Alu) Not(value [8]byte) [8]byte {
+	t1 := util.BinaryToDecimal(value[:])
+
+	res := ^t1
+	byteRes := byte(res)
+
+	return util.DecimalToBinary(int(byteRes))
+}
+
+func (a *Alu) Equal() {
+	bT1 := a.Temp1.GetValue()
+	bT2 := a.Temp2.GetValue()
+	t1 := util.BinaryToDecimal(bT1[:])
+	t2 := util.BinaryToDecimal(bT2[:])
+	res := t1 - t2
+
+	a.Comparison.SetLoad()
+	if res > 0 {
+		a.Comparison.LoadValue(util.DecimalToBinary(1))
+	} else if res == 0 {
+		a.Comparison.LoadValue(util.DecimalToBinary(0))
+	} else {
+		a.Comparison.LoadValue(util.DecimalToBinary(255))
+	}
+
 }

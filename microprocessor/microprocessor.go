@@ -113,6 +113,7 @@ func (m *MicroProcessor) Execute() bool {
 	switch code {
 	case opcode.BEGIN:
 		fmt.Println("PROGRAM STARTED")
+
 		m.Clock.Wait()
 	case opcode.END:
 		fmt.Println("PROGRAM ENDED")
@@ -210,6 +211,7 @@ func (m *MicroProcessor) Execute() bool {
 		m.Mbr[util.LOW_BITS].SetLoad()
 		m.Mbr[util.LOW_BITS].LoadValue(m.Al.GetValue())
 		m.Write()
+		m.IncreasePc()
 
 		//-------- MOV AL
 	case opcode.MOV_AL_AH:
@@ -1172,12 +1174,651 @@ func (m *MicroProcessor) Execute() bool {
 		m.L.SetLoad()
 		m.L.LoadValue(m.Alu.Decrement(m.L.GetValue()))
 
-//NOT_AL = 0x15
-	//NOT_AH = 0x16
-	//NOT_B  = 0x17
-	//NOT_C  = 0x18
-	//NOT_D  = 0x19
-	//NOT_E  = 0x1A
+		//NOT_AL = 0x15
+	case opcode.NOT_AL:
+		m.Al.SetLoad()
+		m.Al.LoadValue(m.Alu.Not(m.Al.GetValue()))
+		//NOT_AH = 0x16
+	case opcode.NOT_AH:
+		m.Ah.SetLoad()
+		m.Ah.LoadValue(m.Alu.Not(m.Ah.GetValue()))
+
+		//NOT_B  = 0x17
+	case opcode.NOT_B:
+		m.B.SetLoad()
+		m.B.LoadValue(m.Alu.Not(m.B.GetValue()))
+
+		//NOT_C  = 0x18
+	case opcode.NOT_C:
+		m.C.SetLoad()
+		m.C.LoadValue(m.Alu.Not(m.C.GetValue()))
+
+		//NOT_D  = 0x19
+	case opcode.NOT_D:
+		m.D.SetLoad()
+		m.D.LoadValue(m.Alu.Not(m.D.GetValue()))
+
+		//NOT_E  = 0x1A
+	case opcode.NOT_E:
+		m.E.SetLoad()
+		m.E.LoadValue(m.Alu.Not(m.E.GetValue()))
+
+	case opcode.CJNE_AL_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+		//CJNE_AH_VAL_ADDR = 0xC3
+	case opcode.CJNE_AH_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Ah.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_B_VAL_ADDR  = 0xC4
+	case opcode.CJNE_B_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.B.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_C_VAL_ADDR  = 0xC5
+	case opcode.CJNE_C_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.C.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_D_VAL_ADDR  = 0xC6
+	case opcode.CJNE_D_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_E_VAL_ADDR  = 0xC7
+	case opcode.CJNE_E_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_L_VAL_ADDR  = 0xC8
+	case opcode.CJNE_L_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//CJNE_H_VAL_ADDR  = 0xC9
+	case opcode.CJNE_H_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	case opcode.CJE_AL_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Al.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+	//	CJE_AH_VAL_ADDR = 0xD5
+	case opcode.CJE_AH_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.Ah.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		////CJE_B_VAL_ADDR  = 0xD6
+	case opcode.CJE_B_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.B.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//CJE_C_VAL_ADDR  = 0xD7
+	case opcode.CJE_C_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.C.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//CJE_D_VAL_ADDR  = 0xD8
+	case opcode.CJE_D_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.D.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//CJE_E_VAL_ADDR  = 0xD9
+	case opcode.CJE_E_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.E.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//CJE_L_VAL_ADDR  = 0xDA
+	case opcode.CJE_L_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.L.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//CJE_H_VAL_ADDR  = 0xDB
+	case opcode.CJE_H_VAL_ADDR:
+		m.Alu.Temp1.SetLoad()
+		m.Alu.Temp1.LoadValue(m.H.GetValue())
+		m.Alu.Temp2.SetLoad()
+		m.Alu.Temp2.LoadValue(lbitsInst)
+		m.Alu.Equal()
+		c := m.Alu.Comparison.GetValue()
+		cv := util.BinaryToDecimal(c[:])
+		if cv == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//	DJNZ_AL_ADDR = 0xCA
+	case opcode.DJNZ_AL_ADDR:
+		m.Al.SetLoad()
+		m.Al.LoadValue(m.Alu.Decrement(m.Al.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+		//DJNZ_AH_ADDR = 0xCB
+	case opcode.DJNZ_AH_ADDR:
+		m.Ah.SetLoad()
+		m.Ah.LoadValue(m.Alu.Decrement(m.Ah.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_B_ADDR  = 0xCC
+	case opcode.DJNZ_B_ADDR:
+		m.B.SetLoad()
+		m.B.LoadValue(m.Alu.Decrement(m.B.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_C_ADDR  = 0xCD
+	case opcode.DJNZ_C_ADDR:
+		m.C.SetLoad()
+		m.C.LoadValue(m.Alu.Decrement(m.C.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_D_ADDR  = 0xCE
+	case opcode.DJNZ_D_ADDR:
+		m.D.SetLoad()
+		m.D.LoadValue(m.Alu.Decrement(m.D.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_E_ADDR  = 0xCF
+	case opcode.DJNZ_E_ADDR:
+		m.E.SetLoad()
+		m.E.LoadValue(m.Alu.Decrement(m.E.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_L_ADDR  = 0xD0
+	case opcode.DJNZ_L_ADDR:
+		m.L.SetLoad()
+		m.L.LoadValue(m.Alu.Decrement(m.L.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//DJNZ_H_ADDR  = 0xD1
+	case opcode.DJNZ_H_ADDR:
+		m.H.SetLoad()
+		m.H.LoadValue(m.Alu.Decrement(m.H.GetValue()))
+		if m.Zero == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	case opcode.JC:
+		if m.Alu.Carry == true {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+
+		} else {
+			m.IncreasePc()
+		}
+
+	case opcode.JNC:
+		if m.Alu.Carry == false {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+
+		} else {
+			m.IncreasePc()
+		}
+	case opcode.JZ:
+		a := m.Al.GetValue()
+		al := util.BinaryToDecimal(a[:])
+		if al == 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+	case opcode.JNZ:
+		a := m.Al.GetValue()
+		al := util.BinaryToDecimal(a[:])
+		if al != 0 {
+			m.LoadMarWithPC()
+			m.Memory.Read()
+			m.Pc[util.HIGH_BITS].SetLoad()
+			m.Pc[util.HIGH_BITS].LoadValue(m.Mbr[util.HIGH_BITS].GetValue())
+			m.Pc[util.LOW_BITS].SetLoad()
+			m.Pc[util.LOW_BITS].LoadValue(m.Mbr[util.LOW_BITS].GetValue())
+		} else {
+			m.IncreasePc()
+		}
+
+	//	PUSH_VAL = 0xDE
+	case opcode.PUSH_VAL:
+		m.Push(lbitsInst)
+
+		//PUSH_AL  = 0xDF
+	case opcode.PUSH_AL:
+		m.Push(m.Al.GetValue())
+		//PUSH_AH  = 0xE0
+	case opcode.PUSH_AH:
+		m.Push(m.Ah.GetValue())
+		//PUSH_B   = 0xE1
+	case opcode.PUSH_B:
+		m.Push(m.Al.GetValue())
+		//PUSH_C   = 0xE2
+	case opcode.PUSH_C:
+		m.Push(m.C.GetValue())
+		//PUSH_D   = 0xE3
+	case opcode.PUSH_D:
+		m.Push(m.D.GetValue())
+		//PUSH_E   = 0xE4
+	case opcode.PUSH_E:
+		m.Push(m.E.GetValue())
+		//PUSH_L   = 0xE5
+	case opcode.PUSH_L:
+		m.Push(m.L.GetValue())
+		//PUSH_H   = 0xE6
+	case opcode.PUSH_H:
+		m.Push(m.H.GetValue())
+
+		//	POP_AL = 0xE7
+	case opcode.POP_AL:
+		m.Al.SetLoad()
+		val, err := m.Stack.Pop()
+		fmt.Println(val)
+		if err == nil {
+			m.Al.LoadValue(val)
+		}
+	//POP_AH = 0xE8
+	case opcode.POP_AH:
+		m.Ah.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.Ah.LoadValue(val)
+		}
+
+	//POP_B  = 0xE9
+	case opcode.POP_B:
+		m.B.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.B.LoadValue(val)
+		}
+
+	//POP_C  = 0xEA
+	case opcode.POP_C:
+		m.C.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.C.LoadValue(val)
+		}
+
+	//POP_D  = 0xEB
+	case opcode.POP_D:
+		m.D.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.D.LoadValue(val)
+		}
+
+	//POP_E  = 0xEC
+	case opcode.POP_E:
+		m.E.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.E.LoadValue(val)
+		}
+
+	//POP_L  = 0xED
+	case opcode.POP_L:
+		m.L.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.L.LoadValue(val)
+		}
+
+	//POP_H  = 0xEE
+	case opcode.POP_H:
+		m.H.SetLoad()
+		val, err := m.Stack.Pop()
+		if err == nil {
+			m.H.LoadValue(val)
+		}
+
+	//	CLR_CA = 0xF0
+	case opcode.CLR_CA:
+		m.Alu.Carry = false
+		//CLR_AL = 0xF7
+	case opcode.CLR_AL:
+		m.Al.SetLoad()
+		m.Al.LoadValue(util.DecimalToBinary(0))
+		//CLR_AH = 0xF8
+	case opcode.CLR_AH:
+		m.Ah.SetLoad()
+		m.Ah.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_B  = 0xF9
+	case opcode.CLR_B:
+		m.B.SetLoad()
+		m.B.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_C  = 0xFA
+	case opcode.CLR_C:
+		m.C.SetLoad()
+		m.C.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_D  = 0xFB
+	case opcode.CLR_D:
+		m.D.SetLoad()
+		m.D.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_E  = 0xFC
+	case opcode.CLR_E:
+		m.E.SetLoad()
+		m.E.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_H  = 0xFD
+	case opcode.CLR_H:
+		m.H.SetLoad()
+		m.H.LoadValue(util.DecimalToBinary(0))
+
+		//CLR_L  = 0xFE
+	case opcode.CLR_L:
+		m.L.SetLoad()
+		m.L.LoadValue(util.DecimalToBinary(0))
 
 	default:
 		fmt.Println("OPERATION NOT IMPLEMENTED")
@@ -1361,6 +2002,83 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool) {
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
 		case "XOR":
 			code, ok := opcode.XOR[operand1]
+			checkOperand(ok, operand1)
+			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+		case "NOT":
+			code, ok := opcode.NOT[operand1]
+			checkOperand(ok, operand1)
+			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+		case "JC":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				check(err)
+				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				code := opcode.JC
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true
+			} else {
+				checkOperand(false, operand1)
+			}
+		case "JNC":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				check(err)
+				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				code := opcode.JNC
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true
+			} else {
+				checkOperand(false, operand1)
+			}
+		case "JZ":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				check(err)
+				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				code := opcode.JZ
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true
+			} else {
+				checkOperand(false, operand1)
+			}
+		case "JNZ":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				check(err)
+				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				code := opcode.JNZ
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true
+			} else {
+				checkOperand(false, operand1)
+			}
+
+		case "PUSH":
+			val, err := strconv.Atoi(operand1)
+			if err == nil {
+				byteVal := byte(val)
+				code, _ := opcode.PUSH["VAL"]
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), false
+			} else {
+				code, ok := opcode.PUSH[operand1]
+				checkOperand(ok, operand1)
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+			}
+
+		case "POP":
+			val, err := strconv.Atoi(operand1)
+			if err == nil {
+				byteVal := byte(val)
+				code, _ := opcode.POP["VAL"]
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), false
+			} else {
+				code, ok := opcode.POP[operand1]
+				checkOperand(ok, operand1)
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
+			}
+
+		case "CLR":
+			code, ok := opcode.CLR[operand1]
 			checkOperand(ok, operand1)
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false
 
@@ -1574,7 +2292,6 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool) {
 			if operand1[0] == 'M' {
 				mOp := strings.Replace(operand1, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
-				fmt.Println(operand1, operand2)
 				check(err)
 				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				if operand2 != "AX" {
@@ -1585,11 +2302,55 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool) {
 			} else {
 				checkOperand(false, operand1)
 			}
+		case "DJNZ":
+			code, ok := opcode.DJNZ[operand1]
+			checkOperand(ok, operand1)
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				check(err)
+				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+
+				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true
+			} else {
+				checkOperand(false, operand1)
+			}
 
 		default:
 			panic(operation + " NOT A VALID OPERATION")
 
 		}
+	} else if len(splitInstructions) == 4 {
+		operation := splitInstructions[0]
+		operand1 := splitInstructions[1]
+		operand2 := splitInstructions[2]
+		operand3 := splitInstructions[3]
+		switch operation {
+		case "CJNE":
+			code, ok := opcode.CJNE[operand1]
+			checkOperand(ok, operand1)
+			val, err := strconv.Atoi(operand2)
+			check(err)
+			byteVal := byte(val)
+			mOp := strings.Replace(operand3, "M0X", "", -1)
+			n, err := strconv.ParseUint(mOp, 16, 64)
+			check(err)
+			MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+			return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), true
+		case "CJE":
+			code, ok := opcode.CJE[operand1]
+			checkOperand(ok, operand1)
+			val, err := strconv.Atoi(operand2)
+			check(err)
+			byteVal := byte(val)
+			mOp := strings.Replace(operand3, "M0X", "", -1)
+			n, err := strconv.ParseUint(mOp, 16, 64)
+			check(err)
+			MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+			return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), true
+
+		}
+
 	}
 
 	panic("WORNG COMMAND")
