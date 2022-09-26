@@ -2,8 +2,8 @@ package register
 
 
 type Register struct{
-  Load byte
-  registers [8]FFRS
+  Load byte `json:"load"`
+  Registers [8]FFRS `json:"registers"`
 }
 
 func New() Register{
@@ -24,15 +24,15 @@ func (r *Register) LoadValue(value [8]byte){
   }
   
   for i, bit := range value{
-    r.registers[i].SetLoad()
-    r.registers[i].LoadValue(bit)
+    r.Registers[i].SetLoad()
+    r.Registers[i].LoadValue(bit)
   }
   r.UnsetLoad()
 }
 
 func (r Register) GetValue() [8]byte{
   a := [8]byte{}
-  for i, v := range r.registers{
+  for i, v := range r.Registers{
     a[i] = v.Value
   }
 

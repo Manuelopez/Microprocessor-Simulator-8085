@@ -7,13 +7,12 @@ import (
 )
 
 type Stack struct {
-	Mem    [8][8]register.Register
-	Sp     *register.Register
-	Top    register.Register
-	Bottom register.Register
-
-	Mar *[2]register.Register
-	Mbr *[2]register.Register
+  Mem    [8][8]register.Register `json:"mem"`
+  Sp     *register.Register `json:"sp"`
+  Top    register.Register `json:"top"`
+  Bottom register.Register `json:"bottom"`
+  Mar *[2]register.Register `json:"mar"`
+  Mbr *[2]register.Register `json:"mbr"`
 }
 
 func New() Stack {

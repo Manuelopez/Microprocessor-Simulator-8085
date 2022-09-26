@@ -1,7 +1,7 @@
 package microprocessor
 
 import (
-	"bufio"
+	"encoding/json"
 	"fmt"
 	"micp-sim/alu"
 	"micp-sim/clock"
@@ -10,29 +10,36 @@ import (
 	"micp-sim/register"
 	"micp-sim/stack"
 	"micp-sim/util"
-	"os"
 	"strconv"
 	"strings"
-)
 
+	"github.com/gorilla/websocket"
+)
 
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
 
 type MicroProcessor struct {
 	// AH HIGHT BITS AL LOW BITS
-	Al, Ah, B, C, D, E, L, H *register.Register
-	*memory.Memory
-	*stack.Stack
-	*clock.Clock
-	*alu.Alu
-	Ir  *[2]register.Register
-	St  register.Register
-	Mar *[2]register.Register
-	Mbr *[2]register.Register
-	Pc  *[2]register.Register
+	Conn           *websocket.Conn
+	Al             *register.Register `json:"al"`
+	Ah             *register.Register `json:"ah"`
+	B              *register.Register `json:"b"`
+	C              *register.Register `json:"c"`
+	D              *register.Register `json:"d"`
+	E              *register.Register `json:"e"`
+	L              *register.Register `json:"l"`
+	H              *register.Register `json:"h"`
+	*memory.Memory `json:"memory"`
+	*stack.Stack   `json:"stak"`
+	*clock.Clock   `json:"clock"`
+	*alu.Alu       `json:"alu"`
+	Ir             *[2]register.Register `json:"ir"`
+	Mar            *[2]register.Register `json:"mar"`
+	Mbr            *[2]register.Register `json:"mbr"`
+	Pc             *[2]register.Register `json:"pc"`
 }
 
-func New(freq float64) MicroProcessor {
+func New(freq float64, conn *websocket.Conn) MicroProcessor {
 
 	mar := &[2]register.Register{register.New(), register.New()}
 	mbr := &[2]register.Register{register.New(), register.New()}
@@ -52,6 +59,7 @@ func New(freq float64) MicroProcessor {
 	stack := stack.New()
 	alu := alu.New(&al, mar, mbr, &stack)
 	return MicroProcessor{
+		Conn:   conn,
 		Al:     &al,
 		Ah:     &ah,
 		B:      &b,
@@ -67,43 +75,150 @@ func New(freq float64) MicroProcessor {
 		Stack:  &stack,
 		Alu:    &alu,
 		Ir:     &[2]register.Register{register.New(), register.New()},
-		St:     register.New(),
 		Pc:     pc,
 	}
 }
 
-func (m *MicroProcessor) Start() {
+func (m *MicroProcessor) Start(instructions []string, messageType int) {
 	go m.Clock.TurnOn()
-	m.LoadInstructions("./instructions.txt")
+	m.LoadInstructions(instructions)
+  m.Pc[0].SetLoad()
+  m.Pc[0].LoadValue(util.DecimalToBinary(0))
+  m.Pc[1].SetLoad()
+  m.Pc[1].LoadValue(util.DecimalToBinary(0))
 	for {
 		m.ReadInstructon()
 		endProgram := m.Execute()
+
+		microMap := m.microToMap()
+		val, _ := json.Marshal(microMap)
+		m.Conn.WriteMessage(messageType, val)
 		if endProgram {
 			m.Clock.TurnOff()
 			break
 		}
 	}
-
-	//	a := m.Al.GetValue()
-	al := m.Al.GetValue()
-	fmt.Println(util.BinaryToDecimal(al[:]))
-
-}
-
-func (m *MicroProcessor) Test() {
-
-	m.LoadInstructions("./instructions.txt")
-	for {
-		m.ReadInstructon()
-		endProgram := m.Execute()
-		if endProgram {
-			break
-		}
-	}
-
 	a := m.Al.GetValue()
 	fmt.Println(util.BinaryToDecimal(a[:]))
 
+}
+
+func (m *MicroProcessor) microToMap() map[string]interface{} {
+	val := make(map[string]interface{})
+	val["al"] = m.Al.GetValue()
+	val["ah"] = m.Ah.GetValue()
+	val["b"] = m.B.GetValue()
+	val["c"] = m.C.GetValue()
+	val["d"] = m.D.GetValue()
+	val["e"] = m.E.GetValue()
+	val["l"] = m.L.GetValue()
+	val["h"] = m.H.GetValue()
+
+	marH := m.Mar[util.HIGH_BITS].GetValue()
+	marL := m.Mar[util.LOW_BITS].GetValue()
+	mar := [16]byte{}
+	for i, _ := range mar {
+		if i >= 8 {
+			mar[i] = marL[i-8]
+		} else {
+
+			mar[i] = marH[i]
+		}
+	}
+	val["mar"] = mar
+	mbrH := m.Mbr[util.HIGH_BITS].GetValue()
+	mbrL := m.Mbr[util.LOW_BITS].GetValue()
+	mbr := [16]byte{}
+	for i, _ := range mbr {
+		if i >= 8 {
+			mbr[i] = mbrL[i-8]
+		} else {
+
+			mbr[i] = mbrH[i]
+		}
+	}
+
+  val["mbr"] = mbr
+
+	memory := [256][256][16]byte{}
+	for i, _ := range m.Memory.Mem {
+		for j, _ := range m.Memory.Mem[0] {
+			memH := m.Memory.Mem[i][j][util.HIGH_BITS].GetValue()
+			memL := m.Memory.Mem[i][j][util.LOW_BITS].GetValue()
+			for x := 0; x < 16; x++ {
+				if x >= 8 {
+					memory[i][j][x] = memL[x-8]
+				} else {
+					memory[i][j][x] = memH[x]
+				}
+			}
+
+		}
+	}
+
+	val["memory"] = memory
+	stack := [8][8][8]byte{}
+	for i, _ := range m.Stack.Mem {
+		for j, _ := range m.Stack.Mem {
+			stackVal := m.Stack.Mem[i][j].GetValue()
+			for x := 0; x < 8; x++ {
+				stack[i][j][x] = stackVal[x]
+			}
+		}
+	}
+	var sp *register.Register = m.Stack.Sp
+	if sp == nil {
+		val["stack"] = map[string]interface{}{
+			"mem":    stack,
+			"sp":     sp,
+			"top":    m.Stack.Top.GetValue(),
+			"bottom": m.Stack.Bottom.GetValue(),
+		}
+	} else {
+		val["stack"] = map[string]interface{}{
+			"mem":    stack,
+			"sp":     sp.GetValue(),
+			"top":    m.Stack.Top.GetValue(),
+			"bottom": m.Stack.Bottom.GetValue(),
+		}
+	}
+
+	val["alu"] = map[string]interface{}{
+		"temp1":      m.Alu.Temp1.GetValue(),
+		"temp2":      m.Alu.Temp2.GetValue(),
+		"carry":      m.Alu.Carry,
+		"zero":       m.Alu.Zero,
+		"comparison": m.Alu.Comparison.GetValue(),
+	}
+
+	irH := m.Ir[util.HIGH_BITS].GetValue()
+	irL := m.Ir[util.LOW_BITS].GetValue()
+	ir := [16]byte{}
+	for i, _ := range ir {
+		if i >= 8 {
+			ir[i] = irL[i-8]
+		} else {
+
+			ir[i] = irH[i]
+		}
+	}
+
+	val["ir"] = ir
+	pcH := m.Pc[util.HIGH_BITS].GetValue()
+	pcL := m.Pc[util.LOW_BITS].GetValue()
+	pc := [16]byte{}
+	for i, _ := range pc {
+		if i >= 8 {
+			pc[i] = pcL[i-8]
+		} else {
+
+			pc[i] = pcH[i]
+		}
+	}
+
+	val["pc"] = pc
+
+	return val
 }
 
 func (m *MicroProcessor) Execute() bool {
@@ -1698,7 +1813,7 @@ func (m *MicroProcessor) Execute() bool {
 		m.Push(m.Ah.GetValue())
 		//PUSH_B   = 0xE1
 	case opcode.PUSH_B:
-		m.Push(m.Al.GetValue())
+		m.Push(m.B.GetValue())
 		//PUSH_C   = 0xE2
 	case opcode.PUSH_C:
 		m.Push(m.C.GetValue())
@@ -1719,7 +1834,6 @@ func (m *MicroProcessor) Execute() bool {
 	case opcode.POP_AL:
 		m.Al.SetLoad()
 		val, err := m.Stack.Pop()
-		fmt.Println(val)
 		if err == nil {
 			m.Al.LoadValue(val)
 		}
@@ -1904,14 +2018,10 @@ func (m *MicroProcessor) IncreasePc() {
 
 }
 
-func (m *MicroProcessor) LoadInstructions(filePath string) {
-	file, err := os.Open(filePath)
+func (m *MicroProcessor) LoadInstructions(instructions []string) {
 	pc := 0
-	check(err)
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		text := scanner.Text()
+	for _, inst := range instructions {
+		text := inst
 		instructions := []byte(text)
 		hbitsValue, lbitsValue, isMemoryOp := Assembler(string(instructions))
 

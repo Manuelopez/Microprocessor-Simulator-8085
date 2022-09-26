@@ -1,8 +1,8 @@
 package register
 
 type FFRS struct {
-	Value byte
-	Load  byte
+	Value byte `json:"value"`
+	Load  byte `json:"load"`
 }
 
 func (f *FFRS) SetLoad() {

@@ -1,8 +1,0 @@
-BEGIN
-MOV C 00
-MOB B 90
-dec B
-PUSH B
-INC C
-cjne C 25 M0x3
-END

@@ -1,0 +1,5 @@
+BEGIN
+INC C
+cjne C 3 M0x1
+MOV AL C
+END

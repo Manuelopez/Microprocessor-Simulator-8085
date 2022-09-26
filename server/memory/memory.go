@@ -6,9 +6,9 @@ import (
 )
 
 type Memory struct {
-	Mem [256][256][2]register.Register
-	Mbr *[2]register.Register
-	Mar *[2]register.Register
+  Mem [256][256][2]register.Register `json:"mem"`
+  Mbr *[2]register.Register `json:"mbr"`
+  Mar *[2]register.Register `json:"mar"`
 }
 
 func New(mbr, mar *[2]register.Register) Memory {

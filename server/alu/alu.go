@@ -8,15 +8,15 @@ import (
 )
 
 type Alu struct {
-	Temp1      register.Register
-	Temp2      register.Register
-	Al         *register.Register
-	Stack      *stack.Stack
-	Carry      bool
-	Zero       bool
-	Comparison register.Register
-	Mar        *[2]register.Register
-	Mbr        *[2]register.Register
+	Temp1      register.Register     `json:"temp1"`
+	Temp2      register.Register     `json:"temp2"`
+	Al         *register.Register    `json:"al"`
+	Stack      *stack.Stack          `json:"stack"`
+	Carry      bool                  `json:"carry"`
+	Zero       bool                  `json:"zero"`
+	Comparison register.Register     `json:"comparison"`
+	Mar        *[2]register.Register `json:"mar"`
+	Mbr        *[2]register.Register `json:"mbr"`
 }
 
 func New(al *register.Register, mar, mbr *[2]register.Register, stack *stack.Stack) Alu {
@@ -162,11 +162,11 @@ func (a *Alu) Increment(value [8]byte) [8]byte {
 	t1 := util.BinaryToDecimal(value[:])
 	res := t1 + 1
 
-  if res == 0{
-    a.Zero = true
-  }else {
-    a.Zero = false
-  }
+	if res == 0 {
+		a.Zero = true
+	} else {
+		a.Zero = false
+	}
 
 	if res > 255 {
 		a.Carry = true
@@ -185,11 +185,11 @@ func (a *Alu) Decrement(value [8]byte) [8]byte {
 	t1 := util.BinaryToDecimal(value[:])
 	res := t1 - 1
 
-  if res == 0{
-    a.Zero = true
-  }else{
-    a.Zero = false
-  }
+	if res == 0 {
+		a.Zero = true
+	} else {
+		a.Zero = false
+	}
 	if res < 0 {
 		a.Carry = true
 	} else {
