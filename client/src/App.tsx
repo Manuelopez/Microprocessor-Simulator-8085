@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import './App.css'
-import TextArea from 'text-area-with-line-number'
+import CodeMirror from '@uiw/react-codemirror'
+import { javascript } from '@codemirror/lang-javascript'
+import { okaidia } from '@uiw/codemirror-theme-okaidia'
+
 const socket = new WebSocket('ws://127.0.0.1:8080/ws')
 
 const binaryToHex = (val: number[]) => {
@@ -107,11 +110,18 @@ function App() {
           Send
         </button>
 
-        <TextArea
-          height="100vh"
+        <CodeMirror
           value={instructions}
-          onChange={(e: any) => {
-            setInstructions(e.target.value)
+          height='calc(100vh - 50px)'
+          width='30vw'
+          theme={okaidia}
+          extensions={[javascript({ typescript: true })]}
+          basicSetup={{
+            lineNumbers: true,
+            lintKeymap: false,
+          }}
+          onChange={(text) => {
+            setInstructions(text)
           }}
         />
       </div>
@@ -458,7 +468,7 @@ function App() {
                 }
               }}
             >
-              Top <br/>
+              Top <br />
               {microprocessor
                 ? formatTop === 'b'
                   ? microprocessor.stack.top
@@ -478,7 +488,7 @@ function App() {
                 }
               }}
             >
-              Bottom <br/>
+              Bottom <br />
               {microprocessor
                 ? formatBottom === 'b'
                   ? microprocessor.stack.bottom
