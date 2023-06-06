@@ -47,7 +47,7 @@ func (a *Alu) Addition(s string) {
     result := [8]byte{}
     sum := false
     carry := false
-    for i := 7; i >= 0; i++{
+    for i := 7; i >= 0; i--{
         if(i == 7){
             sum, carry = a.HalfAdder(bT1[i] == 1, bT2[i] == 1)
         }else{
