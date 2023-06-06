@@ -118,9 +118,25 @@ func (a *Alu) Subtraction(s string) {
 }
 
 func (a *Alu) SubtractionLogic(valA, valB [8]byte) ([8]byte, bool){
-    valBTwosComplment, _ := a.TwosComplementLogic(valB)
-    result, carry := a.AdditionLogic(valA, valBTwosComplment)
-    return result, carry 
+	sum := false
+	carry := false
+	result := [8]byte{}
+	for i := 7; i >= 0; i-- {
+
+		if i == 7 {
+			sum, carry = a.HalfSubtracter(valA[i] == 1, valB[i] == 1)
+		} else {
+			sum, carry = a.FullSubtracter(valA[i] == 1, valB[i] == 1, carry)
+		}
+
+		if sum == true {
+			result[i] = 1
+		} else {
+			result[i] = 0
+		}
+	}
+
+	return result, carry
 }
 
 func (a *Alu) TwosComplementLogic(val [8]byte) ([8]byte, bool){
@@ -300,4 +316,18 @@ func (a *Alu) FullAdder(b1, b2, c bool) (bool, bool) {
 	sum, carry2 := a.HalfAdder(sum, c)
 	carry := a.OrGate(carry1, carry2)
 	return sum, carry
+}
+
+func (a *Alu) HalfSubtracter(b1, b2 bool) (bool, bool){
+    sub := a.XorGate(b1, b2)
+    carry := a.AndGate(a.NotGate(b1), b2)
+    return sub, carry
+}
+
+func (a *Alu) FullSubtracter(b1,b2, c bool) (bool, bool){
+    sub, carry1 := a.HalfSubtracter(b1, b2)
+    sub, carry2 := a.HalfSubtracter(sub, c)
+    carry := a.OrGate(carry1, carry2)
+
+    return sub, carry
 }
