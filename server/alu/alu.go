@@ -26,56 +26,56 @@ func New(al *register.Register, mar, mbr *[2]register.Register, stack *stack.Sta
 func (a *Alu) Addition(s string) {
 	bT1 := a.Temp1.GetValue()
 	bT2 := a.Temp2.GetValue()
-	// t1 := util.BinaryToDecimal(bT1[:])
-	// t2 := util.BinaryToDecimal(bT2[:])
-	// res := t1 + t2
-	// byteRes := byte(res)
-	// if res > 255 {
-	// 	a.Carry = true
-	// } else {
-	// 	a.Carry = false
-	// }
-	// if s == "s" {
-	//
-	// 	a.Stack.Push(util.DecimalToBinary(int(byteRes)))
-	// } else {
-	// 	a.Al.SetLoad()
-	// 	a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
-	// }
 
+	result, carry := a.AdditionLogic(bT1, bT2)
+	if carry == true {
+		a.Carry = true
+	} else {
+		a.Carry = false
+	}
 
-    result := [8]byte{}
-    sum := false
-    carry := false
-    for i := 7; i >= 0; i--{
-        if(i == 7){
-            sum, carry = a.HalfAdder(bT1[i] == 1, bT2[i] == 1)
-        }else{
-            sum, carry = a.FullAdder(bT1[i] == 1, bT2[i] == 1, carry)
-        }
+	if s == "s" {
+		a.Stack.Push(result)
+	} else {
+		a.Al.SetLoad()
+		a.Al.LoadValue(result)
+	}
+}
 
-        if sum == true{
-            result[i] = 1
-        }else{
-            result[i] = 0
-        }
-    } 
-    if carry == true{
-        a.Carry = true
-    }else {
-        a.Carry = false
-    }
+func (a *Alu) AdditionLogic(valA, valB [8]byte) ([8]byte, bool) {
+	sum := false
+	carry := false
+	result := [8]byte{}
+	for i := 7; i >= 0; i-- {
 
-    if s == "s"{
-        a.Stack.Push(result)
-    }else{
-        a.Al.SetLoad()
-        a.Al.LoadValue(result)
-    }
+		if i == 7 {
+			sum, carry = a.HalfAdder(valA[i] == 1, valB[i] == 1)
+		} else {
+			sum, carry = a.FullAdder(valA[i] == 1, valB[i] == 1, carry)
+		}
 
+		if sum == true {
+			result[i] = 1
+		} else {
+			result[i] = 0
+		}
+	}
 
+	return result, carry
+}
 
+func (a *Alu) ComplementLogic(val [8]byte) [8]byte {
+	result := [8]byte{}
+	for i := 0; i < 8; i++ {
+		byte := a.NotGate(val[i] == 1)
+		if byte {
+			result[i] = 1
+		} else {
+			result[i] = 0
+		}
+	}
 
+	return result
 }
 
 func (a *Alu) Multiplication(s string) {
@@ -102,22 +102,32 @@ func (a *Alu) Multiplication(s string) {
 func (a *Alu) Subtraction(s string) {
 	bT1 := a.Temp1.GetValue()
 	bT2 := a.Temp2.GetValue()
-	t1 := util.BinaryToDecimal(bT1[:])
-	t2 := util.BinaryToDecimal(bT2[:])
-	res := t1 - t2
 
-	byteRes := byte(res)
-	if res < 0 {
+	res, carry := a.SubtractionLogic(bT1, bT2)
+	if carry {
 		a.Carry = true
 	} else {
 		a.Carry = false
 	}
 	if s == "s" {
-		a.Stack.Push(util.DecimalToBinary(int(byteRes)))
-	} else {
+		a.Stack.Push(res)
+    } else {
 		a.Al.SetLoad()
-		a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
+		a.Al.LoadValue(res)
 	}
+}
+
+func (a *Alu) SubtractionLogic(valA, valB [8]byte) ([8]byte, bool){
+    valBTwosComplment, _ := a.TwosComplementLogic(valB)
+    result, carry := a.AdditionLogic(valA, valBTwosComplment)
+    return result, carry 
+}
+
+func (a *Alu) TwosComplementLogic(val [8]byte) ([8]byte, bool){
+	complement := a.ComplementLogic(val)
+    twosComplement, carry := a.AdditionLogic(complement, [8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+
+    return twosComplement, carry
 }
 
 func (a *Alu) Division(s string) {
@@ -276,18 +286,18 @@ func (a *Alu) NotGate(b1 bool) bool {
 }
 
 func (a *Alu) XorGate(b1, b2 bool) bool {
-    return (b1 || b2) && !(b1 && b2)
+	return (b1 || b2) && !(b1 && b2)
 }
 
-func (a *Alu) HalfAdder(b1, b2 bool) (bool, bool){
-    sum := a.XorGate(b1, b2)
-    carry := a.AndGate(b1, b2)
-    return sum, carry
+func (a *Alu) HalfAdder(b1, b2 bool) (bool, bool) {
+	sum := a.XorGate(b1, b2)
+	carry := a.AndGate(b1, b2)
+	return sum, carry
 }
 
-func (a *Alu) FullAdder(b1, b2, c bool) (bool, bool){
-    sum, carry1 := a.HalfAdder(b1, b2)
-    sum, carry2 := a.HalfAdder(sum, c)
-    carry := a.OrGate(carry1, carry2)
-    return sum, carry
+func (a *Alu) FullAdder(b1, b2, c bool) (bool, bool) {
+	sum, carry1 := a.HalfAdder(b1, b2)
+	sum, carry2 := a.HalfAdder(sum, c)
+	carry := a.OrGate(carry1, carry2)
+	return sum, carry
 }
