@@ -107,3 +107,27 @@ func TestSubtractionOverflow(t *testing.T){
         t.Fatalf("Carry flag, expected = %v, actual = %v", true, a.Carry)
     }
 }
+
+
+func TestMultiplication(t *testing.T){
+	mar := &[2]register.Register{register.New(), register.New()}
+	mbr := &[2]register.Register{register.New(), register.New()}
+
+	al := register.New()
+	stack := stack.New()
+	a := New(&al, mar, mbr, &stack)
+
+    valA := 11
+    valB := 13
+    a.Temp1.SetLoad() 
+    a.Temp1.LoadValue(util.DecimalToBinary(valA))
+    a.Temp2.SetLoad() 
+    a.Temp2.LoadValue(util.DecimalToBinary(valB))
+
+    a.Multiplication("")
+    res := a.Al.GetValue()
+    resDec := util.BinaryToDecimal(res[:])
+    if byte(resDec) != byte(valA * valB){
+        t.Fatalf("Val A = %v, Val B = %v, expected Sum = %v, acutal sum = %v", valA, valB, byte(valA * valB), resDec)
+    }
+}

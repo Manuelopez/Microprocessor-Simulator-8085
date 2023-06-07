@@ -81,22 +81,50 @@ func (a *Alu) ComplementLogic(val [8]byte) [8]byte {
 func (a *Alu) Multiplication(s string) {
 	bT1 := a.Temp1.GetValue()
 	bT2 := a.Temp2.GetValue()
-	t1 := util.BinaryToDecimal(bT1[:])
-	t2 := util.BinaryToDecimal(bT2[:])
-	res := t1 * t2
+	// t1 := util.BinaryToDecimal(bT1[:])
+	// t2 := util.BinaryToDecimal(bT2[:])
+	// res := t1 * t2
+	//
+	// byteRes := byte(res)
+	// if res > 255 {
+	// 	a.Carry = true
+	// } else {
+	// 	a.Carry = false
+	// }
+	// if s == "s" {
+	// 	a.Stack.Push(util.DecimalToBinary(int(byteRes)))
+	// } else {
+	// 	a.Al.SetLoad()
+	// 	a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
+	// }
 
-	byteRes := byte(res)
-	if res > 255 {
-		a.Carry = true
-	} else {
-		a.Carry = false
-	}
+    rest, carry := a.MultiplicationLogic(bT1, bT2)
+
+	a.Carry = carry
 	if s == "s" {
-		a.Stack.Push(util.DecimalToBinary(int(byteRes)))
+		a.Stack.Push(rest)
 	} else {
 		a.Al.SetLoad()
-		a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
+		a.Al.LoadValue(rest)
 	}
+
+}
+
+func (a *Alu) MultiplicationLogic(m, q [8]byte) ([8]byte, bool){
+    al := [8]byte{}
+    carry := false
+    for i := 0; i < 8; i++{
+        if q[7] == 1{
+            carry2 := false
+            al, carry2 = a.AdditionLogic(m, al)
+            carry = a.OrGate(carry, carry2)
+        }
+
+        q, _ = a.ShiftRight(q)
+        al, _ = a.ShiftLeft(al)
+    }
+
+    return al, carry 
 }
 
 func (a *Alu) Subtraction(s string) {
@@ -322,6 +350,29 @@ func (a *Alu) HalfSubtracter(b1, b2 bool) (bool, bool){
     sub := a.XorGate(b1, b2)
     carry := a.AndGate(a.NotGate(b1), b2)
     return sub, carry
+}
+
+func (a *Alu) ShiftRight(b [8]byte) ([8]byte, byte){
+	disposed := b[7]
+	for i := 7; i > 0; i-- {
+		b[i] = b[i-1]
+		if i == 1 {
+			b[i-1] = 0
+		}
+	}
+	return b, disposed
+}
+
+func (a *Alu) ShiftLeft(b [8]byte) ([8]byte, byte){
+    disposed := b[0]
+
+    for i := 0; i < 7; i++{
+        b[i] = b[i+1]
+    }
+
+    b[7] = 0
+
+    return b, disposed
 }
 
 func (a *Alu) FullSubtracter(b1,b2, c bool) (bool, bool){
