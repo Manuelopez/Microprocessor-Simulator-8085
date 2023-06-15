@@ -1,7 +1,6 @@
 package microprocessor
 
 import (
-	"encoding/json"
 	"fmt"
 	"micp-sim/alu"
 	"micp-sim/clock"
@@ -12,8 +11,7 @@ import (
 	"micp-sim/util"
 	"strconv"
 	"strings"
-
-	"github.com/gorilla/websocket"
+    "syscall/js"
 )
 
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
@@ -21,7 +19,6 @@ var savedPcVariables = make(map[string]int)
 
 type MicroProcessor struct {
 	// AH HIGHT BITS AL LOW BITS
-	Conn           *websocket.Conn
 	Al             *register.Register `json:"al"`
 	Ah             *register.Register `json:"ah"`
 	B              *register.Register `json:"b"`
@@ -40,7 +37,7 @@ type MicroProcessor struct {
 	Pc             *[2]register.Register `json:"pc"`
 }
 
-func New(freq float64, conn *websocket.Conn) MicroProcessor {
+func New(freq float64) MicroProcessor {
 
 	mar := &[2]register.Register{register.New(), register.New()}
 	mbr := &[2]register.Register{register.New(), register.New()}
@@ -60,7 +57,6 @@ func New(freq float64, conn *websocket.Conn) MicroProcessor {
 	stack := stack.New()
 	alu := alu.New(&al, mar, mbr, &stack)
 	return MicroProcessor{
-		Conn:   conn,
 		Al:     &al,
 		Ah:     &ah,
 		B:      &b,
@@ -80,7 +76,7 @@ func New(freq float64, conn *websocket.Conn) MicroProcessor {
 	}
 }
 
-func (m *MicroProcessor) Start(instructions []string, messageType int) {
+func (m *MicroProcessor) Start(instructions []string) {
 	go m.Clock.TurnOn()
 	m.LoadInstructions(instructions)
 	m.Pc[0].SetLoad()
@@ -91,20 +87,18 @@ func (m *MicroProcessor) Start(instructions []string, messageType int) {
 		m.ReadInstructon()
 		endProgram := m.Execute()
 
-		microMap := m.microToMap()
-		val, _ := json.Marshal(microMap)
-		m.Conn.WriteMessage(messageType, val)
 		if endProgram {
 			m.Clock.TurnOff()
 			break
 		}
+        m.Clock.Wait()
 	}
 	a := m.Al.GetValue()
 	fmt.Println(util.BinaryToDecimal(a[:]))
 
 }
 
-func (m *MicroProcessor) microToMap() map[string]interface{} {
+func (m *MicroProcessor) sendToJs() map[string]interface{} {
 	val := make(map[string]interface{})
 	val["al"] = m.Al.GetValue()
 	val["ah"] = m.Ah.GetValue()
@@ -231,21 +225,16 @@ func (m *MicroProcessor) Execute() bool {
 	case opcode.BEGIN:
 		fmt.Println("PROGRAM STARTED")
 
-		m.Clock.Wait()
 	case opcode.END:
 		fmt.Println("PROGRAM ENDED")
-		m.Clock.Wait()
 		return true
 
 	case opcode.ADD_VAL:
 		m.Alu.Temp1.SetLoad()
 		m.Alu.Temp1.LoadValue(m.Al.GetValue())
-		m.Clock.Wait()
 		m.Alu.Temp2.SetLoad()
 		m.Alu.Temp2.LoadValue(lbitsInst)
-		m.Clock.Wait()
 		m.Alu.Addition("")
-		m.Clock.Wait()
 	case opcode.ADD_AH:
 		m.Alu.Temp1.SetLoad()
 		m.Alu.Temp1.LoadValue(m.Al.GetValue())
@@ -380,35 +369,27 @@ func (m *MicroProcessor) Execute() bool {
 	case opcode.MOV_AL_VAL:
 		m.Al.SetLoad()
 		m.Al.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_AH_VAL:
 		m.Ah.SetLoad()
 		m.Ah.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_B_VAL:
 		m.B.SetLoad()
 		m.B.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_C_VAL:
 		m.C.SetLoad()
 		m.C.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_D_VAL:
 		m.D.SetLoad()
 		m.D.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_E_VAL:
 		m.E.SetLoad()
 		m.E.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_H_VAL:
 		m.H.SetLoad()
 		m.H.LoadValue(lbitsInst)
-		m.Clock.Wait()
 	case opcode.MOV_L_VAL:
 		m.L.SetLoad()
 		m.L.LoadValue(lbitsInst)
-		m.Clock.Wait()
 
 		// ------- MOV B
 	case opcode.MOV_B_AL:
@@ -2037,8 +2018,8 @@ func (m *MicroProcessor) LoadInstructions(instructions []string) {
 		m.Mbr[util.LOW_BITS].SetLoad()
 		m.Mbr[util.LOW_BITS].LoadValue(lbitsValue)
 		if savePC {
-      fmt.Println(pc)
-      fmt.Println(variable)
+			fmt.Println(pc)
+			fmt.Println(variable)
 			savedPcVariables[variable] = pc
 		}
 		m.Memory.Write()
