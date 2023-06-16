@@ -11,7 +11,7 @@ import (
 	"micp-sim/util"
 	"strconv"
 	"strings"
-    "syscall/js"
+	"syscall/js"
 )
 
 var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
@@ -78,6 +78,7 @@ func New(freq float64) MicroProcessor {
 
 func (m *MicroProcessor) Start(instructions []string) {
 	go m.Clock.TurnOn()
+
 	m.LoadInstructions(instructions)
 	m.Pc[0].SetLoad()
 	m.Pc[0].LoadValue(util.DecimalToBinary(0))
@@ -87,133 +88,46 @@ func (m *MicroProcessor) Start(instructions []string) {
 		m.ReadInstructon()
 		endProgram := m.Execute()
 
+        update(m)
 		if endProgram {
 			m.Clock.TurnOff()
 			break
 		}
-        m.Clock.Wait()
+        
+
+		m.Clock.Wait()
+
 	}
-	a := m.Al.GetValue()
-	fmt.Println(util.BinaryToDecimal(a[:]))
 
 }
 
-func (m *MicroProcessor) sendToJs() map[string]interface{} {
-	val := make(map[string]interface{})
-	val["al"] = m.Al.GetValue()
-	val["ah"] = m.Ah.GetValue()
-	val["b"] = m.B.GetValue()
-	val["c"] = m.C.GetValue()
-	val["d"] = m.D.GetValue()
-	val["e"] = m.E.GetValue()
-	val["l"] = m.L.GetValue()
-	val["h"] = m.H.GetValue()
+func update(m *MicroProcessor) {
+	alBinary := m.Al.GetValue()
+	al := util.BinaryToDecimal(alBinary[:])
+	// Ah
+	ahBinary := m.Ah.GetValue()
+	ah := util.BinaryToDecimal(ahBinary[:])
 
-	marH := m.Mar[util.HIGH_BITS].GetValue()
-	marL := m.Mar[util.LOW_BITS].GetValue()
-	mar := [16]byte{}
-	for i, _ := range mar {
-		if i >= 8 {
-			mar[i] = marL[i-8]
-		} else {
+	// B              *register.Register `json:"b"`
+	bBinary := m.B.GetValue()
+	b := util.BinaryToDecimal(bBinary[:])
+	// C              *register.Register `json:"c"`
+	cBinary := m.C.GetValue()
+	c := util.BinaryToDecimal(cBinary[:])
+	// D              *register.Register `json:"d"`
+	dBinary := m.D.GetValue()
+	d := util.BinaryToDecimal(dBinary[:])
+	// E              *register.Register `json:"e"`
+	eBinary := m.E.GetValue()
+	e := util.BinaryToDecimal(eBinary[:])
+	// L              *register.Register `json:"l"`
+	lBinary := m.L.GetValue()
+	l := util.BinaryToDecimal(lBinary[:])
+	// H              *register.Register `json:"h"`
+	hBinary := m.H.GetValue()
+	h := util.BinaryToDecimal(hBinary[:])
 
-			mar[i] = marH[i]
-		}
-	}
-	val["mar"] = mar
-	mbrH := m.Mbr[util.HIGH_BITS].GetValue()
-	mbrL := m.Mbr[util.LOW_BITS].GetValue()
-	mbr := [16]byte{}
-	for i, _ := range mbr {
-		if i >= 8 {
-			mbr[i] = mbrL[i-8]
-		} else {
-
-			mbr[i] = mbrH[i]
-		}
-	}
-
-	val["mbr"] = mbr
-
-	memory := [256][256][16]byte{}
-	for i, _ := range m.Memory.Mem {
-		for j, _ := range m.Memory.Mem[0] {
-			memH := m.Memory.Mem[i][j][util.HIGH_BITS].GetValue()
-			memL := m.Memory.Mem[i][j][util.LOW_BITS].GetValue()
-			for x := 0; x < 16; x++ {
-				if x >= 8 {
-					memory[i][j][x] = memL[x-8]
-				} else {
-					memory[i][j][x] = memH[x]
-				}
-			}
-
-		}
-	}
-
-	val["memory"] = memory
-	stack := [8][8][8]byte{}
-	for i, _ := range m.Stack.Mem {
-		for j, _ := range m.Stack.Mem {
-			stackVal := m.Stack.Mem[i][j].GetValue()
-			for x := 0; x < 8; x++ {
-				stack[i][j][x] = stackVal[x]
-			}
-		}
-	}
-	var sp *register.Register = m.Stack.Sp
-	if sp == nil {
-		val["stack"] = map[string]interface{}{
-			"mem":    stack,
-			"sp":     sp,
-			"top":    m.Stack.Top.GetValue(),
-			"bottom": m.Stack.Bottom.GetValue(),
-		}
-	} else {
-		val["stack"] = map[string]interface{}{
-			"mem":    stack,
-			"sp":     sp.GetValue(),
-			"top":    m.Stack.Top.GetValue(),
-			"bottom": m.Stack.Bottom.GetValue(),
-		}
-	}
-
-	val["alu"] = map[string]interface{}{
-		"temp1":      m.Alu.Temp1.GetValue(),
-		"temp2":      m.Alu.Temp2.GetValue(),
-		"carry":      m.Alu.Carry,
-		"zero":       m.Alu.Zero,
-		"comparison": m.Alu.Comparison.GetValue(),
-	}
-
-	irH := m.Ir[util.HIGH_BITS].GetValue()
-	irL := m.Ir[util.LOW_BITS].GetValue()
-	ir := [16]byte{}
-	for i, _ := range ir {
-		if i >= 8 {
-			ir[i] = irL[i-8]
-		} else {
-
-			ir[i] = irH[i]
-		}
-	}
-
-	val["ir"] = ir
-	pcH := m.Pc[util.HIGH_BITS].GetValue()
-	pcL := m.Pc[util.LOW_BITS].GetValue()
-	pc := [16]byte{}
-	for i, _ := range pc {
-		if i >= 8 {
-			pc[i] = pcL[i-8]
-		} else {
-
-			pc[i] = pcH[i]
-		}
-	}
-
-	val["pc"] = pc
-
-	return val
+    js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h)
 }
 
 func (m *MicroProcessor) Execute() bool {
@@ -2018,8 +1932,8 @@ func (m *MicroProcessor) LoadInstructions(instructions []string) {
 		m.Mbr[util.LOW_BITS].SetLoad()
 		m.Mbr[util.LOW_BITS].LoadValue(lbitsValue)
 		if savePC {
-			fmt.Println(pc)
-			fmt.Println(variable)
+			// fmt.Println(pc)
+			// fmt.Println(variable)
 			savedPcVariables[variable] = pc
 		}
 		m.Memory.Write()

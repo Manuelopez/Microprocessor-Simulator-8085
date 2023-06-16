@@ -2,7 +2,6 @@ package main
 
 import (
 	"micp-sim/microprocessor"
-	"micp-sim/util"
 	"strconv"
 	"strings"
 	"syscall/js"
@@ -26,13 +25,10 @@ func add(this js.Value, i []js.Value) any {
 func sendInst(this js.Value, i []js.Value) any{
 	value1 := js.Global().Get("document").Call("getElementById", "inst").Get("value").String()
     inst := strings.Split(value1, "\n")
-
     micp := microprocessor.New(1)
-    micp.Start(inst)
-    al := micp.Al.GetValue()
+    go micp.Start(inst)
 
-    
-    println(util.BinaryToDecimal(al[:])) 
+
 
     return ""
 }

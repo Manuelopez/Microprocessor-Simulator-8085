@@ -14,6 +14,19 @@ license that can be found in the LICENSE file.
     <script src="wasm_exec.js"></script>
 
     <script>
+      function updateRegisters(al, ah, b, c, d, e, l, h) {
+
+        requestAnimationFrame(() => {
+          document.getElementById('al').innerHTML = al + ''
+          document.getElementById('ah').innerHTML = ah + ''
+          document.getElementById('b').innerHTML = b + ''
+          document.getElementById('c').innerHTML = c + ''
+          document.getElementById('d').innerHTML = d + ''
+          document.getElementById('e').innerHTML = e + ''
+          document.getElementById('l').innerHTML = l + ''
+          document.getElementById('h').innerHTML = h + ''
+        })
+      }
       if (!WebAssembly.instantiateStreaming) {
         // polyfill
         WebAssembly.instantiateStreaming = async (resp, importObject) => {
@@ -37,9 +50,41 @@ license that can be found in the LICENSE file.
       function sendInstToGo() {
         sendInst()
       }
-
-
     </script>
+
+    <div>
+      <label>AL</label>
+      <div id="al" data-value="">0</div>
+    </div>
+
+    <div>
+      <label>AH</label>
+      <div id="ah" data-value="">0</div>
+    </div>
+    <div>
+      <label>B</label>
+      <div id="b" data-value="">0</div>
+    </div>
+    <div>
+      <label>C</label>
+      <div id="c" data-value="">0</div>
+    </div>
+    <div>
+      <label>D</label>
+      <div id="d" data-value="">0</div>
+    </div>
+    <div>
+      <label>E</label>
+      <div id="e" data-value="">0</div>
+    </div>
+    <div>
+      <label>L</label>
+      <div id="l" data-value="">0</div>
+    </div>
+    <div>
+      <label>H</label>
+      <div id="h" data-value="">0</div>
+    </div>
     <textarea id="inst"> </textarea>
     <button onClick="sendInstToGo()" id="send">send</button>
     <button onClick="subtract(1,2);" id="sub">sub</button>

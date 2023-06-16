@@ -81,32 +81,36 @@ func (a *Alu) ComplementLogic(val [8]byte) [8]byte {
 func (a *Alu) Multiplication(s string) {
 	bT1 := a.Temp1.GetValue()
 	bT2 := a.Temp2.GetValue()
-	// t1 := util.BinaryToDecimal(bT1[:])
-	// t2 := util.BinaryToDecimal(bT2[:])
-	// res := t1 * t2
-	//
-	// byteRes := byte(res)
-	// if res > 255 {
-	// 	a.Carry = true
-	// } else {
-	// 	a.Carry = false
-	// }
-	// if s == "s" {
-	// 	a.Stack.Push(util.DecimalToBinary(int(byteRes)))
-	// } else {
-	// 	a.Al.SetLoad()
-	// 	a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
-	// }
+	t1 := util.BinaryToDecimal(bT1[:])
+	t2 := util.BinaryToDecimal(bT2[:])
+	res := t1 * t2
 
-    rest, carry := a.MultiplicationLogic(bT1, bT2)
-
-	a.Carry = carry
+	byteRes := byte(res)
+	if res > 255 {
+		a.Carry = true
+	} else {
+		a.Carry = false
+	}
 	if s == "s" {
-		a.Stack.Push(rest)
+		a.Stack.Push(util.DecimalToBinary(int(byteRes)))
 	} else {
 		a.Al.SetLoad()
-		a.Al.LoadValue(rest)
+		a.Al.LoadValue(util.DecimalToBinary(int(byteRes)))
 	}
+
+
+
+
+    // creating my own logic does not work yet TODO
+ //    rest, carry := a.MultiplicationLogic(bT1, bT2)
+	//
+	// a.Carry = carry
+	// if s == "s" {
+	// 	a.Stack.Push(rest)
+	// } else {
+	// 	a.Al.SetLoad()
+	// 	a.Al.LoadValue(rest)
+	// }
 
 }
 
