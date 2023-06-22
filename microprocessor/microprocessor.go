@@ -14,27 +14,26 @@ import (
 	"syscall/js"
 )
 
-var MEMORY_ADDRESS_FOR_OPERATION uint16 = 0
-var savedPcVariables = make(map[string]int)
-
 type MicroProcessor struct {
 	// AH HIGHT BITS AL LOW BITS
-	Al             *register.Register `json:"al"`
-	Ah             *register.Register `json:"ah"`
-	B              *register.Register `json:"b"`
-	C              *register.Register `json:"c"`
-	D              *register.Register `json:"d"`
-	E              *register.Register `json:"e"`
-	L              *register.Register `json:"l"`
-	H              *register.Register `json:"h"`
-	*memory.Memory `json:"memory"`
-	*stack.Stack   `json:"stak"`
-	*clock.Clock   `json:"clock"`
-	*alu.Alu       `json:"alu"`
-	Ir             *[2]register.Register `json:"ir"`
-	Mar            *[2]register.Register `json:"mar"`
-	Mbr            *[2]register.Register `json:"mbr"`
-	Pc             *[2]register.Register `json:"pc"`
+	Al                           *register.Register `json:"al"`
+	Ah                           *register.Register `json:"ah"`
+	B                            *register.Register `json:"b"`
+	C                            *register.Register `json:"c"`
+	D                            *register.Register `json:"d"`
+	E                            *register.Register `json:"e"`
+	L                            *register.Register `json:"l"`
+	H                            *register.Register `json:"h"`
+	*memory.Memory               `json:"memory"`
+	*stack.Stack                 `json:"stak"`
+	*clock.Clock                 `json:"clock"`
+	*alu.Alu                     `json:"alu"`
+	Ir                           *[2]register.Register `json:"ir"`
+	Mar                          *[2]register.Register `json:"mar"`
+	Mbr                          *[2]register.Register `json:"mbr"`
+	Pc                           *[2]register.Register `json:"pc"`
+	savedPcVariables             map[string]int
+	MEMORY_ADDRESS_FOR_OPERATION uint16
 }
 
 func New(freq float64) MicroProcessor {
@@ -88,12 +87,11 @@ func (m *MicroProcessor) Start(instructions []string) {
 		m.ReadInstructon()
 		endProgram := m.Execute()
 
-        update(m)
+		update(m)
 		if endProgram {
 			m.Clock.TurnOff()
 			break
 		}
-        
 
 		m.Clock.Wait()
 
@@ -127,7 +125,59 @@ func update(m *MicroProcessor) {
 	hBinary := m.H.GetValue()
 	h := util.BinaryToDecimal(hBinary[:])
 
-    js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h)
+	// Ir             *[2]register.Register `json:"ir"`
+	irLBin := m.Ir[util.LOW_BITS].GetValue()
+	irHBin := m.Ir[util.HIGH_BITS].GetValue()
+	irBin := make([]byte, 0)
+	irBin = append(irBin, irHBin[:]...)
+	irBin = append(irBin, irLBin[:]...)
+	ir := util.BinaryToDecimal(irBin)
+
+	// Mar            *[2]register.Register `json:"mar"`
+	marLBin := m.Mar[util.LOW_BITS].GetValue()
+	marHBin := m.Mar[util.HIGH_BITS].GetValue()
+	marBin := make([]byte, 0)
+	marBin = append(marBin, marHBin[:]...)
+	marBin = append(marBin, marLBin[:]...)
+	mar := util.BinaryToDecimal(marBin)
+
+	// Mbr            *[2]register.Register `json:"mbr"`
+	mbrLBin := m.Mbr[util.LOW_BITS].GetValue()
+	mbrHBin := m.Mbr[util.HIGH_BITS].GetValue()
+	mbrBin := make([]byte, 0)
+	mbrBin = append(mbrBin, mbrHBin[:]...)
+	mbrBin = append(mbrBin, mbrLBin[:]...)
+	mbr := util.BinaryToDecimal(mbrBin)
+	// Pc             *[2]register.Register `json:"pc"`
+	pcLBin := m.Pc[util.LOW_BITS].GetValue()
+	pcHBin := m.Pc[util.HIGH_BITS].GetValue()
+	pcBin := make([]byte, 0)
+	pcBin = append(pcBin, pcHBin[:]...)
+	pcBin = append(pcBin, pcLBin[:]...)
+	pc := util.BinaryToDecimal(pcBin)
+
+	// memory
+
+
+    jsArray := js.Global().Get("Array").New(256*256)
+
+
+    for i := 0; i < 256*256; i++ {
+        valHigh := i  >> 8
+        valLow := i & 0xFF
+        valReg := m.Memory.Mem[valHigh][valLow]
+        valBinHigh := valReg[0].GetValue()
+        valBinLow := valReg[1].GetValue()
+        valBin := make([]byte, 16)
+        valBin = append(valBin, valBinHigh[:]...)
+        valBin = append(valBin, valBinLow[:]...)
+        val := util.BinaryToDecimal(valBin) 
+        jsArray.SetIndex(i, val)
+	}
+
+
+	js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, jsArray)
+
 }
 
 func (m *MicroProcessor) Execute() bool {
@@ -1919,7 +1969,7 @@ func (m *MicroProcessor) LoadInstructions(instructions []string) {
 	for _, inst := range instructions {
 		text := inst
 		instructions := []byte(text)
-		hbitsValue, lbitsValue, isMemoryOp, savePC, variable := Assembler(string(instructions))
+		hbitsValue, lbitsValue, isMemoryOp, savePC, variable := m.Assembler(string(instructions))
 
 		hbits := pc >> 8
 		lbits := pc & 0xFF
@@ -1934,14 +1984,14 @@ func (m *MicroProcessor) LoadInstructions(instructions []string) {
 		if savePC {
 			// fmt.Println(pc)
 			// fmt.Println(variable)
-			savedPcVariables[variable] = pc
+			m.savedPcVariables[variable] = pc
 		}
 		m.Memory.Write()
 		pc++
 
 		if isMemoryOp {
 
-			hbitsValueMemory, lbitsValueMemory := util.DecimalToBinary16(int(MEMORY_ADDRESS_FOR_OPERATION))
+			hbitsValueMemory, lbitsValueMemory := util.DecimalToBinary16(int(m.MEMORY_ADDRESS_FOR_OPERATION))
 
 			hbits := pc >> 8
 			lbits := pc & 0xFF
@@ -1963,7 +2013,7 @@ func (m *MicroProcessor) LoadInstructions(instructions []string) {
 
 }
 
-func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
+func (m *MicroProcessor) Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 	instructions = strings.ToUpper(instructions)
 	instructions = strings.TrimSpace(instructions)
 	splitInstructions := strings.Split(instructions, " ")
@@ -2066,15 +2116,15 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 			checkOperand(ok, operand1)
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), false, savePC, variable
 		case "JC":
-			mOp, ok := savedPcVariables[operand1]
+			mOp, ok := m.savedPcVariables[operand1]
 			checkOperand(ok, operand1)
-			MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
+			m.MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
 			code := opcode.JC
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
 		case "JNC":
-			mOp, ok := savedPcVariables[operand1]
+			mOp, ok := m.savedPcVariables[operand1]
 			checkOperand(ok, operand1)
-			MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
+			m.MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
 			code := opcode.JNC
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
 		case "JZ":
@@ -2082,7 +2132,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand1, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code := opcode.JZ
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
 			} else {
@@ -2093,7 +2143,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand1, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code := opcode.JNZ
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
 			} else {
@@ -2146,7 +2196,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.ADD["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2166,7 +2216,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand1, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.MOV["M"][operand2]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2183,7 +2233,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 					mOp := strings.Replace(operand2, "M0X", "", -1)
 					n, err := strconv.ParseUint(mOp, 16, 64)
 					check(err)
-					MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+					m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 					code, ok := mapedOp1["M"]
 					checkOperand(ok, operand2)
 					return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2200,7 +2250,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.MUL["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2223,7 +2273,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.AND["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2247,7 +2297,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.XOR["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2271,7 +2321,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.ORL["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2295,7 +2345,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.SUB["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2319,7 +2369,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand2, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				code, ok := opcode.DIV["M"]
 				checkOperand(ok, operand2)
 				return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
@@ -2340,7 +2390,7 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 				mOp := strings.Replace(operand1, "M0X", "", -1)
 				n, err := strconv.ParseUint(mOp, 16, 64)
 				check(err)
-				MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
+				m.MEMORY_ADDRESS_FOR_OPERATION = uint16(n)
 				if operand2 != "AX" {
 					checkOperand(false, operand2)
 				}
@@ -2352,9 +2402,9 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 		case "DJNZ":
 			code, ok := opcode.DJNZ[operand1]
 			checkOperand(ok, operand1)
-			mOp, ok := savedPcVariables[operand2]
+			mOp, ok := m.savedPcVariables[operand2]
 			checkOperand(ok, operand2)
-			MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
+			m.MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
 
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(opcode.NOTHING), true, savePC, variable
 
@@ -2374,9 +2424,9 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 			val, err := strconv.Atoi(operand2)
 			check(err)
 			byteVal := byte(val)
-			mOp, ok := savedPcVariables[operand3]
+			mOp, ok := m.savedPcVariables[operand3]
 			checkOperand(ok, operand3)
-			MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
+			m.MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), true, savePC, variable
 		case "CJE":
 			code, ok := opcode.CJE[operand1]
@@ -2384,9 +2434,9 @@ func Assembler(instructions string) ([8]byte, [8]byte, bool, bool, string) {
 			val, err := strconv.Atoi(operand2)
 			check(err)
 			byteVal := byte(val)
-			mOp, ok := savedPcVariables[operand3]
+			mOp, ok := m.savedPcVariables[operand3]
 			checkOperand(ok, operand3)
-			MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
+			m.MEMORY_ADDRESS_FOR_OPERATION = uint16(mOp)
 			return util.DecimalToBinary(int(code)), util.DecimalToBinary(int(byteVal)), true, savePC, variable
 
 		}

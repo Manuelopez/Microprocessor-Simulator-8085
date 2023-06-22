@@ -14,8 +14,10 @@ license that can be found in the LICENSE file.
     <script src="wasm_exec.js"></script>
 
     <script>
-      function updateRegisters(al, ah, b, c, d, e, l, h) {
+      function updateRegisters(al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, mem) {
 
+
+          console.log(mem, "here here here")
         requestAnimationFrame(() => {
           document.getElementById('al').innerHTML = al + ''
           document.getElementById('ah').innerHTML = ah + ''
@@ -25,6 +27,11 @@ license that can be found in the LICENSE file.
           document.getElementById('e').innerHTML = e + ''
           document.getElementById('l').innerHTML = l + ''
           document.getElementById('h').innerHTML = h + ''
+          document.getElementById('ir').innerHTML = ir + ''
+          document.getElementById('mar').innerHTML = mar + ''
+          document.getElementById('mbr').innerHTML = mbr + ''
+          document.getElementById('pc').innerHTML = pc + ''
+      //    document.getElementById('mem').innerHTML = mem
         })
       }
       if (!WebAssembly.instantiateStreaming) {
@@ -85,6 +92,33 @@ license that can be found in the LICENSE file.
       <label>H</label>
       <div id="h" data-value="">0</div>
     </div>
+
+
+    <div>
+      <label>IR</label>
+      <div id="ir" data-value="">0</div>
+    </div>
+
+    <div>
+      <label>MAR</label>
+      <div id="mar" data-value="">0</div>
+    </div>
+
+    <div>
+      <label>MBR</label>
+      <div id="mbr" data-value="">0</div>
+    </div>
+
+    <div>
+      <label>PC</label>
+      <div id="pc" data-value="">0</div>
+    </div>
+
+    <div>
+      <label>MEM</label>
+      <div id="mem" data-value="">WEll Fuck</div>
+    </div>
+
     <textarea id="inst"> </textarea>
     <button onClick="sendInstToGo()" id="send">send</button>
     <button onClick="subtract(1,2);" id="sub">sub</button>
