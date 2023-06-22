@@ -14,10 +14,25 @@ license that can be found in the LICENSE file.
     <script src="wasm_exec.js"></script>
 
     <script>
-      function updateRegisters(al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, mem) {
-
-
-          console.log(mem, "here here here")
+      function updateRegisters(
+        al,
+        ah,
+        b,
+        c,
+        d,
+        e,
+        l,
+        h,
+        ir,
+        mar,
+        mbr,
+        pc,
+        mem,
+        sp,
+        stackMem
+      ) {
+        console.log(stackMem, 'here here here')
+        console.log(sp, 'sp here here')
         requestAnimationFrame(() => {
           document.getElementById('al').innerHTML = al + ''
           document.getElementById('ah').innerHTML = ah + ''
@@ -31,7 +46,9 @@ license that can be found in the LICENSE file.
           document.getElementById('mar').innerHTML = mar + ''
           document.getElementById('mbr').innerHTML = mbr + ''
           document.getElementById('pc').innerHTML = pc + ''
-      //    document.getElementById('mem').innerHTML = mem
+          document.getElementById('mem').innerHTML = mem
+          document.getElementById('sp').innerHTML = sp
+          document.getElementById('smem').innerHTML = stackMem
         })
       }
       if (!WebAssembly.instantiateStreaming) {
@@ -58,7 +75,7 @@ license that can be found in the LICENSE file.
         sendInst()
       }
     </script>
-
+    <textarea id="inst"></textarea>
     <div>
       <label>AL</label>
       <div id="al" data-value="">0</div>
@@ -93,7 +110,6 @@ license that can be found in the LICENSE file.
       <div id="h" data-value="">0</div>
     </div>
 
-
     <div>
       <label>IR</label>
       <div id="ir" data-value="">0</div>
@@ -118,8 +134,15 @@ license that can be found in the LICENSE file.
       <label>MEM</label>
       <div id="mem" data-value="">WEll Fuck</div>
     </div>
+    <div>
+      <label>sp</label>
+      <div id="sp" data-value="">0</div>
+    </div>
+    <div>
+      <label>stack mem</label>
+      <div id="smem" data-value="">WEll Fuck</div>
+    </div>
 
-    <textarea id="inst"> </textarea>
     <button onClick="sendInstToGo()" id="send">send</button>
     <button onClick="subtract(1,2);" id="sub">sub</button>
 

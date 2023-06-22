@@ -158,25 +158,46 @@ func update(m *MicroProcessor) {
 
 	// memory
 
+	mem := js.Global().Get("Array").New(256 * 256)
 
-    jsArray := js.Global().Get("Array").New(256*256)
+	for i := 0; i < 256*256; i++ {
+		valHigh := i >> 8
+		valLow := i & 0xFF
+		valReg := m.Memory.Mem[valHigh][valLow]
+		valBinHigh := valReg[0].GetValue()
+		valBinLow := valReg[1].GetValue()
+		valBin := make([]byte, 16)
+		valBin = append(valBin, valBinHigh[:]...)
+		valBin = append(valBin, valBinLow[:]...)
+		val := util.BinaryToDecimal(valBin)
+		mem.SetIndex(i, val)
+	}
 
+	// stack
+	//     sp
 
-    for i := 0; i < 256*256; i++ {
-        valHigh := i  >> 8
-        valLow := i & 0xFF
-        valReg := m.Memory.Mem[valHigh][valLow]
-        valBinHigh := valReg[0].GetValue()
-        valBinLow := valReg[1].GetValue()
-        valBin := make([]byte, 16)
-        valBin = append(valBin, valBinHigh[:]...)
-        valBin = append(valBin, valBinLow[:]...)
-        val := util.BinaryToDecimal(valBin) 
-        jsArray.SetIndex(i, val)
+	var sp int
+	if m.Stack.Sp != nil {
+		spBinary := m.Stack.Sp.GetValue()
+		sp = util.BinaryToDecimal(spBinary[:])
+	} else {
+        sp = -1
+	}
+
+	//    stack mem
+	stackMem := js.Global().Get("Array").New(8 * 8)
+
+	for i := 0; i < 8*8; i++ {
+		valHigh := i >> 3
+		valLow := i & 0x7
+		valReg := m.Stack.Mem[valHigh][valLow]
+		valBin := valReg.GetValue()
+		val := util.BinaryToDecimal(valBin[:])
+		stackMem.SetIndex(i, val)
 	}
 
 
-	js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, jsArray)
+	js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, mem, sp, stackMem)
 
 }
 
