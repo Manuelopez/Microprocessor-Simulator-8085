@@ -6,6 +6,8 @@ license that can be found in the LICENSE file.
 -->
 <html>
   <head>
+    <link rel="stylesheet" href="style.css" />
+
     <meta charset="utf-8" />
     <title>Go wasm</title>
   </head>
@@ -14,6 +16,24 @@ license that can be found in the LICENSE file.
     <script src="wasm_exec.js"></script>
 
     <script>
+      let AL
+      let AH
+      let B
+      let C
+      let D
+      let E
+      let L
+      let H
+      let IR
+      let MAR
+      let MBR
+      let PC
+      let MEM
+      let SP
+      let SMEM
+
+      function updateaDisplay() {}
+
       function updateRegisters(
         al,
         ah,
@@ -31,26 +51,25 @@ license that can be found in the LICENSE file.
         sp,
         stackMem
       ) {
-        console.log(stackMem, 'here here here')
-        console.log(sp, 'sp here here')
-        requestAnimationFrame(() => {
-          document.getElementById('al').innerHTML = al + ''
-          document.getElementById('ah').innerHTML = ah + ''
-          document.getElementById('b').innerHTML = b + ''
-          document.getElementById('c').innerHTML = c + ''
-          document.getElementById('d').innerHTML = d + ''
-          document.getElementById('e').innerHTML = e + ''
-          document.getElementById('l').innerHTML = l + ''
-          document.getElementById('h').innerHTML = h + ''
-          document.getElementById('ir').innerHTML = ir + ''
-          document.getElementById('mar').innerHTML = mar + ''
-          document.getElementById('mbr').innerHTML = mbr + ''
-          document.getElementById('pc').innerHTML = pc + ''
-          document.getElementById('mem').innerHTML = mem
-          document.getElementById('sp').innerHTML = sp
-          document.getElementById('smem').innerHTML = stackMem
-        })
+        AL = al
+        AH = ah
+        B = b
+        C = c
+        D = d
+        E = e
+        L = l
+        H = h
+        IR = ir
+        MAR = mar
+        MBR = mbr
+        PC = pc
+        MEM = mem
+        SP = sp
+        SMEM = stackMem
+
+        updateaDisplay()
       }
+
       if (!WebAssembly.instantiateStreaming) {
         // polyfill
         WebAssembly.instantiateStreaming = async (resp, importObject) => {
@@ -75,77 +94,84 @@ license that can be found in the LICENSE file.
         sendInst()
       }
     </script>
-    <textarea id="inst"></textarea>
-    <div>
-      <label>AL</label>
-      <div id="al" data-value="">0</div>
+
+    <div class="root">
+
+      <textarea class="" id="inst"></textarea>
+      <button onClick="sendInstToGo()" id="send">send</button>
+      <div class="texteditor">
+        <label>AL</label>
+        <div id="al" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>AH</label>
+        <div id="ah" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>B</label>
+        <div id="b" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>C</label>
+        <div id="c" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>D</label>
+        <div id="d" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>E</label>
+        <div id="e" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>L</label>
+        <div id="l" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>H</label>
+        <div id="h" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>IR</label>
+        <div id="ir" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>MAR</label>
+        <div id="mar" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>MBR</label>
+        <div id="mbr" data-value="">0</div>
+      </div>
+
+      <div>
+        <label>PC</label>
+        <div id="pc" data-value="">0</div>
+      </div>
+      <div>
+        <label>MEM</label>
+        <div id="mem" data-value="">WEll Fuck</div>
+      </div>
+      <div>
+        <label>sp</label>
+        <div id="sp" data-value="">0</div>
+      </div>
+      <div>
+        <label>stack mem</label>
+        <div id="smem" data-value="">WEll Fuck</div>
+      </div>
+
     </div>
 
-    <div>
-      <label>AH</label>
-      <div id="ah" data-value="">0</div>
-    </div>
-    <div>
-      <label>B</label>
-      <div id="b" data-value="">0</div>
-    </div>
-    <div>
-      <label>C</label>
-      <div id="c" data-value="">0</div>
-    </div>
-    <div>
-      <label>D</label>
-      <div id="d" data-value="">0</div>
-    </div>
-    <div>
-      <label>E</label>
-      <div id="e" data-value="">0</div>
-    </div>
-    <div>
-      <label>L</label>
-      <div id="l" data-value="">0</div>
-    </div>
-    <div>
-      <label>H</label>
-      <div id="h" data-value="">0</div>
-    </div>
-
-    <div>
-      <label>IR</label>
-      <div id="ir" data-value="">0</div>
-    </div>
-
-    <div>
-      <label>MAR</label>
-      <div id="mar" data-value="">0</div>
-    </div>
-
-    <div>
-      <label>MBR</label>
-      <div id="mbr" data-value="">0</div>
-    </div>
-
-    <div>
-      <label>PC</label>
-      <div id="pc" data-value="">0</div>
-    </div>
-
-    <div>
-      <label>MEM</label>
-      <div id="mem" data-value="">WEll Fuck</div>
-    </div>
-    <div>
-      <label>sp</label>
-      <div id="sp" data-value="">0</div>
-    </div>
-    <div>
-      <label>stack mem</label>
-      <div id="smem" data-value="">WEll Fuck</div>
-    </div>
-
-    <button onClick="sendInstToGo()" id="send">send</button>
-    <button onClick="subtract(1,2);" id="sub">sub</button>
-
-    <button onClick="callGoFunction()">some</button>
   </body>
 </html>
