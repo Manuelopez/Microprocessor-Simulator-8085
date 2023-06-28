@@ -1,3 +1,61 @@
 .root{
-    background-color: blue;
+    display: flex;
+    flex-direction: row;
+}
+
+.registers{
+    background-color: grey;
+    width: 250px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 50px;
+}
+
+.registers > label{
+    margin-right: 10px;
+}
+
+.textEditorParent{
+    height: 705px;
+    width: 420px;
+}
+.textEditor{
+    height: 705px;
+    overflow-y:scroll;
+    width: 400px;
+}
+
+.mem{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 480px;
+    
+}
+
+.mem > div{
+    height: 25px;
+    width: 30px;
+    font-size: 13px;
+}
+
+.memBtns{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.pc{
+    background-color: red;
+}
+
+.memParent{
+    margin-right: 20px;
+}
+
+.smemParent{
+    width:  40px; 
 }

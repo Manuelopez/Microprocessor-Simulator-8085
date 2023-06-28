@@ -40,16 +40,37 @@ func subtract(this js.Value, i []js.Value) any {
 	return ""
 }
 
-func Hello(this js.Value, i []js.Value) any {
-	println("yes i got called")
-	return ""
+
+func syntaxChequer(this js.Value, i []js.Value) any {
+    instString := i[0].String()
+    savedPcVariables := make(map[string]int)
+    insts := strings.Split(instString, "\n")
+    errors := [][]string{}
+    for _, inst := range insts{
+        if strings.TrimSpace(inst) == ""{
+            continue
+        }
+        error := microprocessor.SyntaxHilighter(inst, savedPcVariables)
+        errors = append(errors, error)
+    }
+
+
+	errosJs := js.Global().Get("Array").New(len(errors))
+    for i, x := range errors{
+	    errorJs := js.Global().Get("Array").New(len(x))
+        for j, err := range x{
+            errorJs.SetIndex(j, err)
+        }
+		errosJs.SetIndex(i, errorJs)
+    }
+    return errosJs
 }
 
 func registerCallbacks() {
 	js.Global().Set("add", js.FuncOf(add))
 	js.Global().Set("subtract", js.FuncOf(subtract))
-	js.Global().Set("Hello", js.FuncOf(Hello))
 	js.Global().Set("sendInst", js.FuncOf(sendInst))
+	js.Global().Set("syntaxChequer", js.FuncOf(syntaxChequer))
 }
 
 func main() {

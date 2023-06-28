@@ -28,11 +28,97 @@ license that can be found in the LICENSE file.
       let MAR
       let MBR
       let PC
-      let MEM
-      let SP
-      let SMEM
+      let MEM = new Array(256*256).fill(0)
+      let SP = -1
+      let SMEM = new Array(8 * 8).fill(0)
+      let memPage = 0
+      let timer
+      let textEditorActualText = ""
+      let syntaxErrors = []
 
-      function updateaDisplay() {}
+      
+      function updateRegistersDisplay(){
+          document.getElementById('al').innerText = AL + ''
+          document.getElementById('ah').innerText = AH + ''
+          document.getElementById('b').innerText = B + ''
+          document.getElementById('c').innerText = C + ''
+          document.getElementById('d').innerText = D + ''
+          document.getElementById('e').innerText = E + ''
+          document.getElementById('l').innerText = L + ''
+          document.getElementById('h').innerText = H + ''
+          document.getElementById('ir').innerText = IR + ''
+          document.getElementById('mar').innerText = MAR + ''
+          document.getElementById('mbr').innerText = MBR + ''
+          document.getElementById('pc').innerText = PC + ''
+      }
+
+      function updateDisplay() {
+          updateRegistersDisplay();
+          updateMem();
+          updateStackMem();
+      }
+      function nextPage(){
+          if(memPage >= 255){
+              return
+          }
+
+          memPage += 1
+          updateMem();
+      }
+
+      function goToPc(){
+          let page = Math.floor(PC / 256)
+          memPage = page
+          updateMem()
+      }
+
+      
+      function prevPage(){
+          if(memPage <= 0){
+              return
+          }
+
+          memPage -= 1
+          updateMem();
+      }
+      function updateMem(){
+          let start = memPage * 256
+          let end = start + 256
+
+          let $mem = document.getElementById("mem")
+          $mem.innerHTML = "";
+          for (let i = start; i < end; i++){
+              let div = document.createElement("div")
+              let val16 = MEM[i].toString(16)
+              if(val16.length < 4){
+                  for(let i = val16.length; i < 4; i++){
+                      val16 = "0" + val16
+                  }
+              }
+              div.innerText = val16
+              if(i == PC){
+                  div.classList.add("pc")
+              }
+              $mem.appendChild(div)
+          }
+      }
+
+      function updateStackMem(){
+          let $stackMem = document.getElementById("smem")
+          $stackMem.innerHTML = "";
+          for (let i = 8*8 -1; i >= 0; i--){
+              let div = document.createElement("div")
+              let val16 = SMEM[i].toString(16)
+              if(val16.length === 1){
+                  val16 = "0" + val16
+              }
+              div.innerText = val16
+              if(i == SP){
+                  div.classList.add("pc")
+              }
+              $stackMem.appendChild(div)
+          }
+      }
 
       function updateRegisters(
         al,
@@ -67,7 +153,7 @@ license that can be found in the LICENSE file.
         SP = sp
         SMEM = stackMem
 
-        updateaDisplay()
+        updateDisplay()
       }
 
       if (!WebAssembly.instantiateStreaming) {
@@ -93,85 +179,130 @@ license that can be found in the LICENSE file.
       function sendInstToGo() {
         sendInst()
       }
+
+      function updateSyntaxErrors(){
+          const inst = document.getElementById('inst').innerText.split('\n')
+          const $inst = document.getElementById('inst')
+          $inst.innerHTML = "";
+          let curr = 0;
+          for (let i = 0; i < inst.length; i++){
+              const currInst = inst[i].trim()
+              const div = document.createElement('div')
+              if (currInst !== ''){
+                  div.innerText = currInst
+                  let error = syntaxErrors[i]
+                  console.log(error)
+                  curr++
+              }
+
+              $inst.appendChild(div)
+          }
+
+      }
+
+      function inputChanged(e){
+          clearTimeout(timer)
+          
+          const newTimer = setTimeout(()=>{
+              const inst = document.getElementById('inst')
+              syntaxErrors = syntaxChequer(inst.innerText)
+              //updateSyntaxErrors()
+          },
+          500)
+          timer = newTimer 
+      }
     </script>
 
     <div class="root">
+      <div>
+        <div class="registers">
+          <label>AL</label>
+          <div id="al" data-value="">0</div>
+        </div>
 
-      <textarea class="" id="inst"></textarea>
-      <button onClick="sendInstToGo()" id="send">send</button>
-      <div class="texteditor">
-        <label>AL</label>
-        <div id="al" data-value="">0</div>
+        <div class="registers">
+          <label>AH</label>
+          <div id="ah" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>B</label>
+          <div id="b" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>C</label>
+          <div id="c" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>D</label>
+          <div id="d" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>E</label>
+          <div id="e" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>L</label>
+          <div id="l" data-value="">0</div>
+        </div class="registers">
+
+        <div class="registers">
+          <label>H</label>
+          <div id="h" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>IR</label>
+          <div id="ir" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>MAR</label>
+          <div id="mar" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>MBR</label>
+          <div id="mbr" data-value="">0</div>
+        </div>
+
+        <div class="registers">
+          <label>PC</label>
+          <div id="pc" data-value="">0</div>
+        </div>
       </div>
 
-      <div>
-        <label>AH</label>
-        <div id="ah" data-value="">0</div>
+      <div class="textEditorParent">
+        <div contenteditable="true" class="textEditor" id="inst"></div>
+        <button onClick="sendInstToGo()" id="send">send</button>
       </div>
 
-      <div>
-        <label>B</label>
-        <div id="b" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>C</label>
-        <div id="c" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>D</label>
-        <div id="d" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>E</label>
-        <div id="e" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>L</label>
-        <div id="l" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>H</label>
-        <div id="h" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>IR</label>
-        <div id="ir" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>MAR</label>
-        <div id="mar" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>MBR</label>
-        <div id="mbr" data-value="">0</div>
-      </div>
-
-      <div>
-        <label>PC</label>
-        <div id="pc" data-value="">0</div>
-      </div>
-      <div>
+      <div class="memParent">
         <label>MEM</label>
-        <div id="mem" data-value="">WEll Fuck</div>
-      </div>
-      <div>
-        <label>sp</label>
-        <div id="sp" data-value="">0</div>
-      </div>
-      <div>
-        <label>stack mem</label>
-        <div id="smem" data-value="">WEll Fuck</div>
-      </div>
+        <div id="mem" class="mem" data-value="">
+        </div>
 
+        <div class="memBtns">
+            <button onClick="prevPage()">Prev Page</button>
+            <button onClick="goToPc()">Go To PC</button>
+            <button onClick="nextPage()">Next Page</button>
+        </div>
+      </div>
+      <div class="smemParent">
+        <label>stack mem</label>
+        <div id="smem" data-value=""></div>
+      </div>
     </div>
+ 
+    <script>
+        updateMem();
+        updateStackMem()
+        document.getElementById("inst").addEventListener('keyup', inputChanged)
+    </script>
 
   </body>
 </html>

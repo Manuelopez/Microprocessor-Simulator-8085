@@ -181,7 +181,7 @@ func update(m *MicroProcessor) {
 		spBinary := m.Stack.Sp.GetValue()
 		sp = util.BinaryToDecimal(spBinary[:])
 	} else {
-        sp = -1
+		sp = -1
 	}
 
 	//    stack mem
@@ -195,7 +195,6 @@ func update(m *MicroProcessor) {
 		val := util.BinaryToDecimal(valBin[:])
 		stackMem.SetIndex(i, val)
 	}
-
 
 	js.Global().Call("updateRegisters", al, ah, b, c, d, e, l, h, ir, mar, mbr, pc, mem, sp, stackMem)
 
@@ -2467,6 +2466,404 @@ func (m *MicroProcessor) Assembler(instructions string) ([8]byte, [8]byte, bool,
 	panic("WORNG COMMAND")
 }
 
+func SyntaxHilighter(instructions string, savedPcVariables map[string]int) []string {
+	errors := []string{}
+	instructions = strings.ToUpper(instructions)
+	instructions = strings.TrimSpace(instructions)
+	splitInstructions := strings.Split(instructions, " ")
+	allOperations := [...]string{
+		"BEGIN",
+		"END",
+		"INC",
+		"DEC",
+		"ADD",
+		"SUB",
+		"MUL",
+		"DIV",
+		"ORL",
+		"AND",
+		"XOR",
+		"NOT",
+		"JC",
+		"JNC",
+		"JZ",
+		"JNZ",
+		"PUSH",
+		"POP",
+		"CLR",
+		"MOV",
+		"STA",
+		"DJNZ",
+		"CJNE",
+		"CJE",
+	}
+	if len(splitInstructions) > 2 {
+		found := false
+		for _, op := range allOperations {
+			if op == splitInstructions[0] {
+				found = true
+			}
+		}
+
+		if !found {
+			// then is variable to save operation code
+			splitInstructions = splitInstructions[1:]
+		}
+	}
+
+	if len(splitInstructions) == 1 {
+		switch splitInstructions[0] {
+		case "BEGIN":
+		case "END":
+		default:
+			errors = append(errors, splitInstructions[0]+"is not an operation")
+		}
+	} else if len(splitInstructions) == 2 {
+		operation := splitInstructions[0]
+		operand1 := splitInstructions[1]
+		switch operation {
+		case "INC":
+			_, ok := opcode.INC[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "DEC":
+			_, ok := opcode.DEC[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+
+		case "ADD":
+			_, ok := opcode.ADD[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "SUB":
+			_, ok := opcode.SUB[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "MUL":
+			_, ok := opcode.MUL[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "DIV":
+			_, ok := opcode.DIV[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "ORL":
+			_, ok := opcode.ORL[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "AND":
+			_, ok := opcode.AND[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "XOR":
+			_, ok := opcode.XOR[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "NOT":
+			_, ok := opcode.NOT[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		case "JC":
+			mOp, ok := savedPcVariables[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			val := uint16(mOp)
+			if val > 65535 {
+				errors = append(errors, string(val)+" Is not a uint16 value")
+			}
+		case "JNC":
+			mOp, ok := savedPcVariables[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			val := uint16(mOp)
+            checkMaxValueIntError(int(val), errors)
+		case "JZ":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+			} else {
+				checkOperandSyntax(false, operand1, errors)
+			}
+		case "JNZ":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+			} else {
+				checkOperandSyntax(false, operand1, errors)
+			}
+
+		case "PUSH":
+			_, err := strconv.Atoi(operand1)
+			if err == nil {
+			} else {
+				_, ok := opcode.PUSH[operand1]
+				checkOperandSyntax(ok, operand1, errors)
+			}
+
+		case "POP":
+			_, err := strconv.Atoi(operand1)
+			if err == nil {
+			} else {
+				_, ok := opcode.POP[operand1]
+				checkOperandSyntax(ok, operand1,errors)
+			}
+
+		case "CLR":
+			_, ok := opcode.CLR[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+		}
+        return errors
+	} else if len(splitInstructions) == 3 {
+		operation := splitInstructions[0]
+		operand1 := splitInstructions[1]
+		operand2 := splitInstructions[2]
+
+		switch operation {
+		case "ADD":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "addition can only by done with AL as first Operand")			
+                return errors
+            }
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.ADD["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+			} else {
+				_, ok := opcode.ADD[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+			}
+		case "MOV":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.MOV["M"][operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			mapedOp1, ok := opcode.MOV[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+			} else {
+				if operand2[0] == 'M' {
+					mOp := strings.Replace(operand2, "M0X", "", -1)
+					n, err := strconv.ParseUint(mOp, 16, 64)
+					check(err)
+                    val := uint16(n)
+                    checkMaxValueIntError(int(val), errors)
+					_, ok := mapedOp1["M"]
+					checkOperandSyntax(ok, operand2, errors)
+                    return errors
+				}
+				_, ok := mapedOp1[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+		case "MUL":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "multiplication can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.MUL["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.MUL[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+		case "AND":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "and operation can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.AND["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.AND[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+
+		case "XOR":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "exclusive or operation can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.XOR["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.XOR[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+
+		case "ORL":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "or operation can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.ORL["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.ORL[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+
+		case "SUB":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "subtraction operation can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.SUB["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.SUB[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+
+		case "DIV":
+			if operand1 != "AL" {
+                errors = append(errors, string(operand1) + "division operation can only by done with AL as first Operand")			
+                return errors
+			}
+			if operand2[0] == 'M' {
+				mOp := strings.Replace(operand2, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				_, ok := opcode.DIV["M"]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+			_, err := strconv.Atoi(operand2)
+			if err == nil {
+                return errors
+			} else {
+				_, ok := opcode.DIV[operand2]
+				checkOperandSyntax(ok, operand2, errors)
+                return errors
+			}
+
+		case "STA":
+			if operand1[0] == 'M' {
+				mOp := strings.Replace(operand1, "M0X", "", -1)
+				n, err := strconv.ParseUint(mOp, 16, 64)
+				checkErrorIntError(err, mOp, errors)
+                val := uint16(n)
+                checkMaxValueIntError(int(val), errors)
+				if operand2 != "AX" {
+					checkOperandSyntax(false, operand2, errors)
+				}
+                return errors
+			} else {
+				checkOperandSyntax(false, operand1, errors)
+                return errors
+			}
+		case "DJNZ":
+			_, ok := opcode.DJNZ[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			_, ok = savedPcVariables[operand2]
+			checkOperandSyntax(ok, operand2, errors)
+            return errors
+
+		default:
+            errors = append(errors, operation + " NOT A VALID OPERATION")
+            return errors
+
+		}
+	} else if len(splitInstructions) == 4 {
+		operation := splitInstructions[0]
+		operand1 := splitInstructions[1]
+		operand2 := splitInstructions[2]
+		operand3 := splitInstructions[3]
+		switch operation {
+		case "CJNE":
+			_, ok := opcode.CJNE[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			_, err := strconv.Atoi(operand2)
+			checkErrorIntError(err, operand2, errors)
+			_, ok = savedPcVariables[operand3]
+			checkOperandSyntax(ok, operand3, errors)
+            return errors
+		case "CJE":
+			_, ok := opcode.CJE[operand1]
+			checkOperandSyntax(ok, operand1, errors)
+			_, err := strconv.Atoi(operand2)
+			checkErrorIntError(err, operand2, errors)
+			_, ok = savedPcVariables[operand3]
+			checkOperandSyntax(ok, operand3, errors)
+            return errors
+
+		}
+
+	}
+
+    return errors
+}
+
 func check(e error) {
 	if e != nil {
 		panic(e)
@@ -2482,5 +2879,23 @@ func check8BitOverflow(val int) {
 func checkOperand(ok bool, operand string) {
 	if !ok {
 		panic(operand + " NOT A VALID OPERAND")
+	}
+}
+
+func checkOperandSyntax(ok bool, operand string, errors []string) {
+	if !ok {
+		errors = append(errors, operand+" not a valid operand")
+	}
+}
+
+func checkErrorIntError(err error, value string, errors []string) {
+	if err != nil {
+		errors = append(errors, value+" is not a valid number")
+	}
+}
+
+func checkMaxValueIntError(val int, errors []string) {
+	if val > 65535 {
+		errors = append(errors, string(val)+" Is not a uint16 value")
 	}
 }
